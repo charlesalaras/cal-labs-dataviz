@@ -47,7 +47,7 @@ def init_dashboard(server):
 
     dcc.Dropdown(
         id='figure-list',
-        options= [{'label': 'graph 1' , 'value' : 'Name of graph one'} , {'label': 'graph 2' , 'value' : 'Name of graph two'} ],
+        options= [{'label': 'Module 1' , 'value' : 'Name of graph one'} , {'label': 'Module 2' , 'value' : 'Name of graph two'} ],
         value = 'Name of graph one'
     ),  
     html.Div(id='dd-output-container', style={

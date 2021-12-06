@@ -1,3 +1,4 @@
+.env
 sample_lrs.json
 src/dash/templates
 src/dash/layout.py
