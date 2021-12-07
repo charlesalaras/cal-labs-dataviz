@@ -11,9 +11,19 @@ import plotly.graph_objects as go
 from dash.dependencies import Input, Output
 from .data import fig_objects
 
+external_stylesheets = [
+    'https://codepen.io/chriddyp/pen/bWLwgP.css',
+    {
+        'href': 'https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css',
+        'rel': 'stylesheet',
+        'integrity': 'sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO',
+        'crossorigin': 'anonymous'
+    }
+]
+
 colors = {
    'background': '#FFFFFF',
-   'text': '#F00000'
+   'text': '#12121F'
 }
 
 fig = fig_objects[0]
@@ -28,6 +38,7 @@ def init_dashboard(server):
    dash_app = dash.Dash(
       server=server,
       routes_pathname_prefix='/dashapp/',
+      external_stylesheets=external_stylesheets
    )
 
    # Create Dash Layout
@@ -46,6 +57,7 @@ def init_dashboard(server):
     }),
 
     dcc.Dropdown(
+        className='four columns',
         id='figure-list',
         options= [{'label': 'Module 1' , 'value' : 'Name of graph one'} , {'label': 'Module 2' , 'value' : 'Name of graph two'} ],
         value = 'Name of graph one'
@@ -97,6 +109,7 @@ def init_callbacks(app):
          graphs = []
          for i in range(0,len(fig_objects)):
             graphs.append(dcc.Graph(
+               className='six columns',
                id='graph-{}'.format(i),
                figure= fig_objects[i]
             ))
