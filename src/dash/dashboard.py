@@ -39,8 +39,10 @@ def init_dashboard(server):
 def init_callbacks(app):
    @app.callback(Output('page-content', 'children'), Input('url', 'pathname'))
    def display_page(pathname):
+      # and tokenized id is instructor
       if pathname == '/dashapp/instructor':
          return instructor_layout
+      # and tokenized id is student
       elif pathname == '/dashapp/student':
          return student_layout
       else:
