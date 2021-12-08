@@ -4,6 +4,8 @@ import dash
 import flask
 from dash import dcc
 from dash import html
+from .instructor import instructor_layout
+from .student import student_layout
 from dash.dependencies import Input, Output
 import json
 
@@ -17,31 +19,6 @@ external_stylesheets = [
       'crossorigin': 'anonymous'
    }
 ]
-
-# Layout for Student View
-student_layout = html.Div([
-    html.H3('Student'),
-    dcc.Dropdown(
-        id='student-dropdown',
-        options=[
-            {'label': 'App 2 - {}'.format(i), 'value': i} for i in [
-                'NYC', 'MTL', 'LA'
-            ]
-        ]
-    )
-])
-
-instructor_layout = html.Div([
-    html.H3('Instructor'),
-    dcc.Dropdown(
-        id='app-1-dropdown',
-        options=[
-            {'label': 'App 1 - {}'.format(i), 'value': i} for i in [
-                'NYC', 'MTL', 'LA'
-            ]
-        ]
-    )
-])
 
 def init_dashboard(server):
    dash_app = dash.Dash(
