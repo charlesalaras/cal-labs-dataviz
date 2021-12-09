@@ -8,6 +8,7 @@ from .instructor import instructor_layout
 from .student import student_layout
 from dash.dependencies import Input, Output
 import json
+from .data import fig_objects
 
 # CSS External Stylesheet
 external_stylesheets = [
@@ -47,3 +48,32 @@ def init_callbacks(app):
          return student_layout
       else:
          return '404'
+   @app.callback(
+   Output('dd-output-container', 'children'), 
+      Input('figure-list', 'value')
+   )
+
+   def update_output(value):
+      return 'You have selected "{}"'.format(value)
+
+   @app.callback(Output('example-graph-2', 'figure'),
+      Input('figure-list', 'value'))
+
+   def update_figure_output(value):
+      if value == 'Name of graph two':
+         figure = fig_objects[1]
+      else : figure = fig_objects[0] 
+      return figure
+
+   @app.callback(Output('container', 'children'),
+      Input('figure-list', 'value'))
+   def addinggraphsfromlist(value):
+      if value == 'Name of graph two':
+         graphs = []
+         for i in range(0,len(fig_objects)):
+            graphs.append(dcc.Graph(
+               className='five columns',
+               id='graph-{}'.format(i),
+               figure= fig_objects[i]
+            ))
+      return html.Div(graphs)
