@@ -4,3 +4,4 @@ src/dash/templates
 src/dash/layout.py
 src/dash/__pycache__
 src/__pycache__
+src/courses
