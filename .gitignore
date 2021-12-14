@@ -8,3 +8,5 @@ src/courses
 
 venv/
 *.pyc
+
+flaskr.db
