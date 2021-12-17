@@ -47,13 +47,21 @@ def init_callbacks(app):
       elif pathname == '/dashapp/student':
          return student_layout
       else:
-         return '404'
+         return html.H1(
+            children='404: Page Not Found',
+            style={
+            'textAlign': 'center'
+         })
    @app.callback(
    Output('dd-output-container', 'children'), 
       Input('figure-list', 'value')
    )
    def update_output(value):
-      return 'You have selected "{}"'.format(value)
+      return html.H4(
+         children='You have selected "{}"'.format(value),
+         style={
+         'textAlign': 'center'
+         })
 
    @app.callback(Output('container', 'children'),
       Input('figure-list', 'value'))

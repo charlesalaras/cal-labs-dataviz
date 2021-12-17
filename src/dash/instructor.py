@@ -46,10 +46,9 @@ instructor_layout = html.Div(style={'backgroundColor': colors['background']}, ch
     dcc.Dropdown(
         className='four columns',
         id='figure-list',
-        style={'margin': 'auto'},
+        style={'margin': 'auto', 'display': 'block'},
         options=requestmodules(),
-        value='Week 2 Module 8: Method of Sections',
-        placeholder='Select a Module'
+        value='Week 2 Module 8: Method of Sections'
     ),  
     html.Div(id='dd-output-container', style={
         'textAlign': 'center',

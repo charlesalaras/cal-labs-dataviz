@@ -47,8 +47,7 @@ student_layout = html.Div(style={'backgroundColor': colors['background']}, child
         className='four columns',
         id='figure-list',
         options=requestmodules(),
-        value="Week 2 Module 8: Method of Sections",
-        placeholder = "Select a Module"
+        value="Week 2 Module 8: Method of Sections"
     ),  
     html.Div(id='dd-output-container', style={
         'textAlign': 'center',
