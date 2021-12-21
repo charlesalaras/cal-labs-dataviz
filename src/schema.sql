@@ -1,0 +1,18 @@
+DROP TABLE IF EXISTS modules;
+DROP TABLE IF EXISTS questions;
+
+CREATE TABLE modules (
+   id INTEGER PRIMARY KEY AUTOINCREMENT,
+   name TEXT UNIQUE NOT NULL
+);
+
+CREATE TABLE questions(
+   id INTEGER PRIMARY KEY AUTOINCREMENT,
+   section TEXT NOT NULL,
+   question_number INTEGER NOT NULL,
+   question_type TEXT NOT NULL,
+   question MEDIUMTEXT NOT NULL,
+   answers TEXT NOT NULL,
+   answer TEXT NOT NULL,
+   topics TEXT NOT NULL
+);

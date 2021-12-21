@@ -11,4 +11,8 @@ def init_app():
       from .dash.dashboard import init_dashboard
       app = init_dashboard(app)
 
+      # Register Database
+      from . import db
+      db.init_app(app)
+
       return app

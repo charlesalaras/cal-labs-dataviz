@@ -3,20 +3,30 @@ import flask
 from dash import dcc
 from dash import html
 from dash.dependencies import Input, Output
-from .data import fig_objects
+# db.py
+import sys
+sys.path.append('../src')
+from src.db import get_db, close_db
 
 colors = {
    'background': '#FFFFFF',
    'text': '#12121F'
 }
 
-fig = fig_objects[0]
-
-fig.update_layout(
-    plot_bgcolor=colors['background'],
-    paper_bgcolor=colors['background'],
-    font_color=colors['text']
-)
+def requestmodules():
+   # FIXME: Grab Existing Modules from Database
+   conn = get_db()
+   modules = conn.execute('SELECT * FROM modules').fetchall()
+   close_db()
+   options = []
+   for module in modules:
+      currDict = {
+         'label': 'Module ' + str(module[2]),
+         'value': module[1]
+      }
+      options.append(currDict)
+   # END OF DATABASE REQUEST
+   return options
 
 # Layout for Student View
 student_layout = html.Div(style={'backgroundColor': colors['background']}, children=[
@@ -36,17 +46,13 @@ student_layout = html.Div(style={'backgroundColor': colors['background']}, child
     dcc.Dropdown(
         className='four columns',
         id='figure-list',
-        options= [{'label': 'Module 1' , 'value' : 'Name of graph one'} , {'label': 'Module 2' , 'value' : 'Name of graph two'} ],
-        value = 'Name of graph one'
+        options=requestmodules(),
+        value="Week 2 Module 8: Method of Sections"
     ),  
     html.Div(id='dd-output-container', style={
         'textAlign': 'center',
         'color': colors['text']
     }),
-     dcc.Graph(
-        id='example-graph-2',
-        figure=fig
-    ),
     html.Div(id='container'),
     html.Div(
         dcc.Graph( id='empty', figure={'data': []}), 
