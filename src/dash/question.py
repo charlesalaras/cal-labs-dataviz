@@ -28,8 +28,10 @@ def create_questions(value):
    # Put Br objects between each
 
    currQuestion = []
+   i = 1
    for ns in parsed_json:
        currQuestion = []
+       currQuestion.append(html.H2('Question ' + str(i)))
        currQuestion.append(html.H3(ns.question))
        choices = []
        for element in ns.answer_choices:
@@ -51,5 +53,6 @@ def create_questions(value):
                 src=img
            ))
        questions.append(currQuestion)
+       i = i + 1
    return questions
 

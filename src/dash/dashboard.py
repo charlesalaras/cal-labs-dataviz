@@ -22,11 +22,17 @@ external_stylesheets = [
    }
 ]
 
+# JavaScript External MathJAX
+external_scripts=[
+   "https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML"
+]
+
 def init_dashboard(server):
    dash_app = dash.Dash(
       server=server,
       routes_pathname_prefix='/dashapp/',
-      external_stylesheets=external_stylesheets
+      external_stylesheets=external_stylesheets,
+      external_scripts=external_scripts
    )
 
    dash_app.layout = html.Div([
