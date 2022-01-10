@@ -44,19 +44,19 @@ instructor_layout = html.Div(style={'backgroundColor': colors['background']}, ch
     }),
 
     dcc.Dropdown(
-        className='four columns',
+        className='twelve columns',
         id='figure-list',
         style={'margin': 'auto', 'display': 'block'},
         options=requestmodules(),
         value='Week 2 Module 8: Method of Sections'
-    ),  
+    ),
     html.Div(id='dd-output-container', style={
         'textAlign': 'center',
         'color': colors['text']
     }),
     html.Div(id='container'),
     html.Div(
-        dcc.Graph( id='empty', figure={'data': []}), 
+        dcc.Graph( id='empty', figure={'data': []}),
             style={'display': 'none'}
             )
 ])
