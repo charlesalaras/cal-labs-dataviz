@@ -9,6 +9,7 @@ from .student import student_layout
 from dash.dependencies import Input, Output
 import json
 from .data import create_data
+from .question import create_questions
 
 # CSS External Stylesheet
 external_stylesheets = [
@@ -21,11 +22,17 @@ external_stylesheets = [
    }
 ]
 
+# JavaScript External MathJAX
+external_scripts=[
+   "https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML"
+]
+
 def init_dashboard(server):
    dash_app = dash.Dash(
       server=server,
       routes_pathname_prefix='/dashapp/',
-      external_stylesheets=external_stylesheets
+      external_stylesheets=external_stylesheets,
+      external_scripts=external_scripts
    )
 
    dash_app.layout = html.Div([
@@ -53,7 +60,7 @@ def init_callbacks(app):
             'textAlign': 'center'
          })
    @app.callback(
-   Output('dd-output-container', 'children'), 
+   Output('dd-output-container', 'children'),
       Input('figure-list', 'value')
    )
    def update_output(value):
@@ -67,8 +74,19 @@ def init_callbacks(app):
       Input('figure-list', 'value'))
    def addinggraphsfromlist(value):
       fig_objects = create_data(value)
+      questions = create_questions(value)
       graphs = []
+      j = 0
       for i in range(0,len(fig_objects)):
+         # Add Relevant Question
+         if i % 3 == 1 and j < len(questions):
+            graphs.append(html.Div(
+                className='five columns',
+                id='question-{}'.format(j),
+                children=questions[j]
+            ))
+            j = j + 1
+         # Add Relevant Graph
          graphs.append(dcc.Graph(
             className='five columns',
             id='graph-{}'.format(i),
