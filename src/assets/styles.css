@@ -137,6 +137,21 @@ body {
   background-color: #111111;
   }
 
+.Select-value {
+  background-color: #111111;
+  color: white;
+}
+.Select-input {
+  background-color: #111111;
+  color: white;
+}
+.Select-control {
+  background-color: #111111;
+  color: white;
+}
+.Select-menu {
+  background-color: #111111;
+}
 
 /* Typography
 –––––––––––––––––––––––––––––––––––––––––––––––––– */
