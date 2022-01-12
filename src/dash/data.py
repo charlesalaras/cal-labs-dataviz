@@ -3,11 +3,15 @@
 import json
 import pandas as pd
 import plotly as plotly
+import plotly.io as pio
 import plotly.graph_objects as go
 import plotly.express as px
 from pandas import json_normalize
 # Unsure if works
 #from .db import get_db
+
+# Add default theming
+pio.templates.default = "plotly_dark"
 
 # Creates the data based on module chosen
 def create_data(module, actor="any"):
@@ -46,7 +50,7 @@ def create_data(module, actor="any"):
    else:
       # Student View, Aggregate Student Data for a Module
       temp = dafaframe.loc[dataframe['actor.name'] == actor and dataframe['object.definition.name.en-US'] == module].copy()
-   
+
    # ISO8601 Parser (Maybe a Library that Does this?)
    for x in temp.index:
        # Parse Hours
@@ -64,7 +68,7 @@ def create_data(module, actor="any"):
    dataframe = temp.copy()
 
    # %%
-   # create time delta from datetime.time objects 
+   # create time delta from datetime.time objects
    dataframe['result.duration.seconds'] = 'NaN'
 
    temp = dataframe.copy()
@@ -94,7 +98,7 @@ def create_data(module, actor="any"):
        title = {'text': "Average Module Completion"},
        domain = {'row': 0, 'column': 1}
        ))
-   # create grid    
+   # create grid
    fig.update_layout(
        grid = {'rows': 2, 'columns': 2})
 
@@ -114,7 +118,7 @@ def create_data(module, actor="any"):
    question_avgs =  pd.DataFrame(columns = ['question', 'desc', 'seconds','raw score', 'scaled score'])
 
    # ceiling function
-   import math  
+   import math
 
    # make all the graphs in loop
    for x in range(0, temp_desc.size):
@@ -130,15 +134,15 @@ def create_data(module, actor="any"):
            fig.update_layout(title="Responses for Final Q" + str(quiz_num))
            # Append Histogram Plot Figure
            fig_objects.append(fig)
-           
+
            # Create Scatter + Details
            fig = px.scatter(finalquiz_dataframe,x='actor.name', y = 'result.score.scaled', color='actor.name')
            fig.update_layout(title="Student Scores for Final Q"  + str(quiz_num))
            # Append Scatter Plot Figure
            fig_objects.append(fig)
-           
+
            # Calculate Averages of Question Scores
-           question_avgs= question_avgs.append({'question': quiz_num, 'desc': temp_desc[x] , 'seconds': finalquiz_dataframe['result.duration.seconds'].mean(), 
+           question_avgs= question_avgs.append({'question': quiz_num, 'desc': temp_desc[x] , 'seconds': finalquiz_dataframe['result.duration.seconds'].mean(),
                    'raw score' :  math.ceil(finalquiz_dataframe['result.score.raw'].mean() ) , 'scaled score' :  finalquiz_dataframe['result.score.scaled'].mean() },ignore_index=True )
 
            # Create Averages Figure
@@ -169,10 +173,10 @@ def create_data(module, actor="any"):
            title = {'text': "Average Time: Q"  +  str(quiz_num)},
            domain={'x': [0.6, 1], 'y': [0, 1]}
            ))
-           # create grid    
+           # create grid
            fig.update_layout(
                grid = {'rows': 3, 'columns': 2})
-           
+
            # Append Averages Figure
            fig_objects.append(fig)
 
@@ -192,7 +196,7 @@ def create_data(module, actor="any"):
        title = {'text': "Avg Quiz Completion"},
        domain = {'row': 0, 'column': 1}
        ))
-   # create grid    
+   # create grid
    fig.update_layout(
        grid = {'rows': 2, 'columns': 2})
 

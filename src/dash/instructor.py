@@ -9,8 +9,8 @@ sys.path.append('../src')
 from src.db import get_db, close_db
 
 colors = {
-   'background': '#FFFFFF',
-   'text': '#12121F'
+   'background': '#111111',
+   'text': '#FFFFFF'
 }
 
 def requestmodules():
