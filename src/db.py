@@ -3,8 +3,11 @@ import os
 import click
 from flask import current_app, g
 from flask.cli import with_appcontext
+from dotenv import load_dotenv
 
-DATABASE = os.environ['DATABASE']
+load_dotenv()
+
+DATABASE = os.getenv('DATABASE')
 
 def get_db():
    if 'db' not in g:
