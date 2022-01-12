@@ -31,7 +31,7 @@ def create_questions(value):
    i = 1
    for ns in parsed_json:
        currQuestion = []
-       currQuestion.append(html.H2('Question ' + str(i)))
+       currQuestion.append(html.H2("Question " + str(i)))
        currQuestion.append(html.H3(ns.question))
        choices = []
        for element in ns.answer_choices:
@@ -41,7 +41,7 @@ def create_questions(value):
             style={ 'list-style-type':'upper-alpha' }
        ))
        currQuestion.append(html.P(
-            children=ns.answer,
+           children=("Correct Answer: " +' '.join(ns.answer)),
             style={ 'font-weight':'bold' }
        ))
        concepts = []
