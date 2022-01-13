@@ -11,16 +11,6 @@ import json
 from .data import create_data
 from .question import create_questions
 
-# CSS External Stylesheet
-external_stylesheets = [
-   'https://codepen.io/chriddyp/pen/bWLwgP.css',
-   {
-      'href': 'https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css',
-      'rel': 'stylesheet',
-      'integrity': 'sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO',
-      'crossorigin': 'anonymous'
-   }
-]
 
 # JavaScript External MathJAX
 external_scripts=[
@@ -31,7 +21,6 @@ def init_dashboard(server):
    dash_app = dash.Dash(
       server=server,
       routes_pathname_prefix='/dashapp/',
-      external_stylesheets=external_stylesheets,
       external_scripts=external_scripts
    )
 
@@ -78,17 +67,26 @@ def init_callbacks(app):
       graphs = []
       j = 0
       for i in range(0,len(fig_objects)):
+         columnSpacing = 'six columns'
+         if i == 0:
+             columnSpacing = 'twelve columns'
+             graphs.append(dcc.Graph(
+                 className=(columnSpacing),
+                 id='graph-{}'.format(i),
+                 figure=fig_objects[i]
+             ))
+             continue
          # Add Relevant Question
          if i % 3 == 1 and j < len(questions):
             graphs.append(html.Div(
-                className='five columns',
+                className=(columnSpacing + ' fig'),
                 id='question-{}'.format(j),
                 children=questions[j]
             ))
             j = j + 1
          # Add Relevant Graph
          graphs.append(dcc.Graph(
-            className='five columns',
+            className=(columnSpacing + ' fig'),
             id='graph-{}'.format(i),
             figure= fig_objects[i]
          ))

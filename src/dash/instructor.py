@@ -9,8 +9,8 @@ sys.path.append('../src')
 from src.db import get_db, close_db
 
 colors = {
-   'background': '#FFFFFF',
-   'text': '#12121F'
+   'background': '#111111',
+   'text': '#FFFFFF'
 }
 
 def requestmodules():
@@ -44,19 +44,19 @@ instructor_layout = html.Div(style={'backgroundColor': colors['background']}, ch
     }),
 
     dcc.Dropdown(
-        className='four columns',
+        className='twelve columns',
         id='figure-list',
-        style={'margin': 'auto', 'display': 'block'},
+        style={'margin': 'auto', 'display': 'block', 'background-color': '#222222', 'color':'white'},
         options=requestmodules(),
         value='Week 2 Module 8: Method of Sections'
-    ),  
+    ),
     html.Div(id='dd-output-container', style={
         'textAlign': 'center',
         'color': colors['text']
     }),
     html.Div(id='container'),
     html.Div(
-        dcc.Graph( id='empty', figure={'data': []}), 
+        dcc.Graph( id='empty', figure={'data': []}),
             style={'display': 'none'}
             )
 ])

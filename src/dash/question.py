@@ -31,8 +31,12 @@ def create_questions(value):
    i = 1
    for ns in parsed_json:
        currQuestion = []
-       currQuestion.append(html.H2("Question " + str(i)))
-       currQuestion.append(html.H3(ns.question))
+       currQuestion.append(html.H5('Question ' + str(i)))
+       for img in ns.images:
+           currQuestion.append(html.Img(
+                src=img
+           ))
+       currQuestion.append(html.P(ns.question))
        choices = []
        for element in ns.answer_choices:
            choices.append(html.Li(element))
@@ -45,13 +49,16 @@ def create_questions(value):
             style={ 'font-weight':'bold' }
        ))
        concepts = []
+       currQuestion.append(html.P(
+           children='Relevant Topics:',
+           style={ 'font-weight':'bold' }
+       ))
        for element in ns.topics:
-           concepts.append(html.Li(element))
-       currQuestion.append(html.Ul(concepts))
-       for img in ns.images:
-           currQuestion.append(html.Img(
-                src=img
+           concepts.append(html.Li(
+               className='topic',
+               children=element
            ))
+       currQuestion.append(html.Ul(concepts))
        questions.append(currQuestion)
        i = i + 1
    return questions
