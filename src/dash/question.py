@@ -54,7 +54,10 @@ def create_questions(value):
            style={ 'font-weight':'bold' }
        ))
        for element in ns.topics:
-           concepts.append(html.Li(element))
+           concepts.append(html.Li(
+               className='topic',
+               children=element
+           ))
        currQuestion.append(html.Ul(concepts))
        questions.append(currQuestion)
        i = i + 1

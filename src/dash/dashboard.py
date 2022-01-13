@@ -70,17 +70,23 @@ def init_callbacks(app):
          columnSpacing = 'six columns'
          if i == 0:
              columnSpacing = 'twelve columns'
+             graphs.append(dcc.Graph(
+                 className=(columnSpacing),
+                 id='graph-{}'.format(i),
+                 figure=fig_objects[i]
+             ))
+             continue
          # Add Relevant Question
          if i % 3 == 1 and j < len(questions):
             graphs.append(html.Div(
-                className=columnSpacing,
+                className=(columnSpacing + ' fig'),
                 id='question-{}'.format(j),
                 children=questions[j]
             ))
             j = j + 1
          # Add Relevant Graph
          graphs.append(dcc.Graph(
-            className=columnSpacing,
+            className=(columnSpacing + ' fig'),
             id='graph-{}'.format(i),
             figure= fig_objects[i]
          ))
