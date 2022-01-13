@@ -12,3 +12,5 @@ venv/
 flaskr.db
 example.PNG
 origjson.txt
+
+src/assets/*.PNG

@@ -164,7 +164,7 @@ body {
 }
 .topic {
   float: left;
-  list-style-type: square;
+  list-style-type: none;
   border: 1px solid #2962FF;
   border-radius: 5px;
   margin: 5px;
