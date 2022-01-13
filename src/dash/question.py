@@ -45,7 +45,7 @@ def create_questions(value):
             style={ 'list-style-type':'upper-alpha' }
        ))
        currQuestion.append(html.P(
-            children=ns.answer,
+           children=("Correct Answer: " +' '.join(ns.answer)),
             style={ 'font-weight':'bold' }
        ))
        concepts = []

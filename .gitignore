@@ -10,3 +10,5 @@ venv/
 *.pyc
 
 flaskr.db
+example.PNG
+origjson.txt
