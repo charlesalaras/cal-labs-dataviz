@@ -30,6 +30,10 @@ def create_questions(value):
    currQuestion = []
    i = 1
    for ns in parsed_json:
+       # Debugging Purposes
+       #f = open("log.txt", "w")
+       #f.write(str(ns.__dict__))
+       #f.close()
        currQuestion = []
        currQuestion.append(html.H5('Question ' + str(i)))
        for img in ns.images:
@@ -39,15 +43,26 @@ def create_questions(value):
        currQuestion.append(html.P(ns.question))
        choices = []
        for element in ns.answer_choices:
-           choices.append(html.Li(element))
+           if element == ns.answer:
+               choices.append(html.Li(
+                    className='correct',
+                    children=element
+               ))
+           else:
+               choices.append(html.Li(element))
        currQuestion.append(html.Ol(
             children=choices,
             style={ 'list-style-type':'upper-alpha' }
        ))
        currQuestion.append(html.P(
            children=("Correct Answer: " +' '.join(ns.answer)),
-            style={ 'font-weight':'bold' }
+           style={ 'font-weight':'bold' }
        ))
+       currQuestion.append(html.P(
+           children='Explanation: ',
+           style={ 'font-weight':'bold' }
+       ))
+       currQuestion.append(html.P(ns.explanation))
        concepts = []
        currQuestion.append(html.P(
            children='Relevant Topics:',
