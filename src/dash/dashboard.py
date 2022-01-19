@@ -6,6 +6,7 @@ from dash import dcc
 from dash import html
 from .instructor import instructor_layout
 from .student import student_layout
+from .questionlayout import question_layout
 from dash.dependencies import Input, Output
 import json
 from .data import create_data
@@ -42,6 +43,8 @@ def init_callbacks(app):
       # and tokenized id is student
       elif pathname == '/dashapp/student':
          return student_layout
+      elif pathname == '/dashapp/questions':
+         return question_layout
       else:
          return html.H1(
             children='404: Page Not Found',
@@ -58,7 +61,20 @@ def init_callbacks(app):
          style={
          'textAlign': 'center'
          })
-
+   @app.callback(Output('questions-container', 'children'),
+      Input('module-list', 'value'))
+   def viewQuestions(value):
+      questions = create_questions(value)
+      views = []
+      j = 0
+      for i in range(0, len(questions)):
+          views.append(html.Div(
+               className='twelve columns fig',
+               id='question-{}'.format(j),
+               children=questions[j]
+          ))
+          j = j + 1
+      return html.Div(views)
    @app.callback(Output('container', 'children'),
       Input('figure-list', 'value'))
    def addinggraphsfromlist(value):

@@ -35,10 +35,10 @@ def create_questions(value):
        #f.write(str(ns.__dict__))
        #f.close()
        currQuestion = []
-       currQuestion.append(html.H5('Question ' + str(i)))
+       currQuestion.append(html.H5(str(ns.section) + ': Question ' + str(i)))
        for img in ns.images:
            currQuestion.append(html.Img(
-                src=img
+                src='assets/' + img
            ))
        currQuestion.append(html.P(ns.question))
        choices = []
