@@ -29,11 +29,12 @@ def create_questions(value):
 
    currQuestion = []
    i = 1
+   # f = open("log.txt", "w")
    for ns in parsed_json:
        # Debugging Purposes
-       #f = open("log.txt", "w")
-       #f.write(str(ns.__dict__))
-       #f.close()
+       # for element in ns.answer_choices:
+       #    f.write(str(ns.answer) + ' ' + str(element) + '\n')
+
        currQuestion = []
        currQuestion.append(html.H5(str(ns.section) + ': Question ' + str(i)))
        for img in ns.images:
@@ -42,22 +43,32 @@ def create_questions(value):
            ))
        currQuestion.append(html.P(ns.question))
        choices = []
+       for element in ns.answer:
+           element = element.strip()
        for element in ns.answer_choices:
-           if element == ns.answer:
+           # Correct Answer
+           elementChoice = element.strip()
+           if elementChoice in ns.answer:
                choices.append(html.Li(
                     className='correct',
                     children=element
                ))
+           # Fill in the Blank
+           elif ns.question_type == 'fb':
+               continue
+           # Multiple Choice Regular
            else:
                choices.append(html.Li(element))
        currQuestion.append(html.Ol(
             children=choices,
             style={ 'list-style-type':'upper-alpha' }
        ))
-       currQuestion.append(html.P(
-           children=("Correct Answer: " +' '.join(ns.answer)),
-           style={ 'font-weight':'bold' }
-       ))
+       if ns.question_type == 'fb':
+           currQuestion.append(html.P(
+               className='correct',
+               children=("Fill in the Blank - Correct Answer: " +', '.join(ns.answer)),
+               style={ 'font-weight':'bold' }
+           ))
        currQuestion.append(html.P(
            children='Explanation: ',
            style={ 'font-weight':'bold' }
@@ -76,5 +87,6 @@ def create_questions(value):
        currQuestion.append(html.Ul(concepts))
        questions.append(currQuestion)
        i = i + 1
+   # f.close()
    return questions
 
