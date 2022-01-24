@@ -10,8 +10,7 @@ def create_questions(value):
    questions = []
    # DATABASE REQUEST: Grab Questions Specific to Module
    conn = get_db()
-   # WARNING: Unsafe!
-   module_questions = conn.execute('SELECT questions FROM modules WHERE name=\"' + value + '\"').fetchall()
+   module_questions = conn.execute("SELECT questions FROM modules WHERE name=:module", {'module': value}).fetchall()
    close_db()
    # Parse JSON String Into Python Object
    if module_questions[0][0] == None:
