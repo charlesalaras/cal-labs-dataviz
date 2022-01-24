@@ -43,6 +43,26 @@ instructor_layout = html.Div(style={'backgroundColor': colors['background']}, ch
         'color': colors['text']
     }),
 
+    html.Ul(
+        children=[
+            html.Li(
+                children=(html.A(
+                    children='Questions',
+                    href='#'
+                )),
+                style='navbar-element'
+            ),
+            html.Li(
+                children=(html.A(
+                    children='Analysis',
+                    href='#'
+                )),
+                style='navbar-select'
+            )
+        ],
+        style='navbar'
+    ),
+
     dcc.Dropdown(
         className='twelve columns',
         id='figure-list',
