@@ -1,11 +1,10 @@
-# FIXME: Questions are not writing!!
-
 import json
 import sys
 from dash import html
 from types import SimpleNamespace
 sys.path.append('../src')
 from src.db import get_db, close_db
+from src.dash.topics import topics
 
 def create_questions(value):
    questions = []
@@ -39,7 +38,7 @@ def create_questions(value):
        currQuestion.append(html.H5(str(ns.section) + ': Question ' + str(i)))
        for img in ns.images:
            currQuestion.append(html.Img(
-                src='assets/' + img
+                src='assets/' + str(value) + '/' + img
            ))
        currQuestion.append(html.P(ns.question))
        choices = []
@@ -82,7 +81,7 @@ def create_questions(value):
        for element in ns.topics:
            concepts.append(html.Li(
                className='topic',
-               children=element
+               children=topics[str(element)]
            ))
        currQuestion.append(html.Ul(concepts))
        questions.append(currQuestion)
