@@ -1,12 +1,12 @@
 """Routes for parent Flask app."""
 from flask import render_template
 from flask import current_app as app
-
+import flask
 
 @app.route('/')
 def home():
     """Landing page."""
-    return "<a href=\"/dashapp/\">Sign in with Canvas</a>"
+    return flask.render_template('home.html')
 
 @app.route('/login')
 def login():

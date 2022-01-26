@@ -9,8 +9,8 @@ sys.path.append('../src')
 from src.db import get_db, close_db
 
 colors = {
-   'background': '#FFFFFF',
-   'text': '#12121F'
+   'background': '#111111',
+   'text': '#FFFFFF'
 }
 
 def requestmodules():
@@ -31,31 +31,38 @@ def requestmodules():
 # Layout for Student View
 student_layout = html.Div(style={'backgroundColor': colors['background']}, children=[
     html.H1(
-        children='Demo for hosted web app',
+        children='Cal Labs Data Analysis',
         style={
             'textAlign': 'center',
             'color': colors['text']
         }
     ),
 
-    html.Div(children='Dash: A web application framework for Python.', style={
+    html.Div(children='Welcome, {email}', style={
         'textAlign': 'center',
         'color': colors['text']
     }),
 
     dcc.Dropdown(
-        className='four columns',
+        className='twelve columns',
         id='figure-list',
         options=requestmodules(),
-        value="Week 2 Module 8: Method of Sections"
-    ),  
+        value="Moment"
+    ),
+    dcc.Input(
+        className='twelve columns',
+        id='student-email',
+        type='email',
+        placeholder='Enter Email Here',
+        value=""
+    ),
     html.Div(id='dd-output-container', style={
         'textAlign': 'center',
         'color': colors['text']
     }),
     html.Div(id='container'),
     html.Div(
-        dcc.Graph( id='empty', figure={'data': []}), 
+        dcc.Graph( id='empty', figure={'data': []}),
             style={'display': 'none'}
             )
 ])

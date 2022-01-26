@@ -14,7 +14,7 @@ from pandas import json_normalize
 pio.templates.default = "plotly_dark"
 
 # Creates the data based on module chosen
-def create_data(module, actor="any"):
+def create_instructor_data(module):
 
    # Open and Parse LRS JSON
    with open('sample_lrs.json') as json_file:
@@ -39,19 +39,15 @@ def create_data(module, actor="any"):
    # Stores timestamp loaded
    del dataframe['stored']
    # Stores User Email
-   del dataframe['actor.mbox']
+   # del dataframe['actor.mbox']
    # Stores Minimum Possible Score (If Available)
    del dataframe['result.score.min']
 
    fig_objects = []
-   if actor == "any":
-      # Instructor View, Aggregate All Module Data
-      temp = dataframe.loc[dataframe['object.definition.name.en-US'] == module].copy()
-   else:
-      # Student View, Aggregate Student Data for a Module
-      temp = dafaframe.loc[dataframe['actor.name'] == actor and dataframe['object.definition.name.en-US'] == module].copy()
+   # Instructor View, Aggregate All Module Data
+   temp = dataframe.loc[dataframe['object.definition.name.en-US'] == module].copy()
 
-   # ISO8601 Parser (Maybe a Library that Does this?)
+     # ISO8601 Parser (Maybe a Library that Does this?)
    for x in temp.index:
        # Parse Hours
        if 'H' in temp.at[x, 'result.duration']:
@@ -222,18 +218,61 @@ def create_data(module, actor="any"):
 
    return fig_objects
 
-"""
-def parse_name(name):
-   current = ""
-   number = 0
-   for x in name:
-      # Week is Found, Drop it
-      if current is "Week ":
-         current = ""
-      # Module Number Found
-      elif isdigit(x) and current is "Module ":
-         number = int(x)
-      else:
-         current = current + x
-   return number
-"""
+def create_student_data(module, actor):
+    with open('sample_lrs.json') as json_file:
+        xapiData = json.load(json_file)
+
+    dataframe = json_normalize(xapiData)
+
+    # Stores Course Link
+    del dataframe['object.id']
+    # Stores 'Activity'
+    del dataframe['object.objectType']
+    # Stores type link
+    del dataframe['object.definition.type']
+    # Stores Access Level
+    del dataframe['authority.objectType']
+    # Stores LRS Link
+    del dataframe['authority.account.homePage']
+    # Stores 'authorization'
+    del dataframe['authority.account.name']
+    # Stores verb link
+    del dataframe['verb.id']
+    # Stores timestamp loaded
+    del dataframe['stored']
+    # Stores User Email
+    # del dataframe['actor.mbox']
+    # Stores Minimum Possible Score (If Available)
+    del dataframe['result.score.min']
+
+    fig_objects = []
+    temp = dataframe.loc[dataframe['object.definition.name.en-US'] == module].copy()
+    temp = temp.loc[temp['actor.mbox'] == actor].copy()
+
+
+    # ISO8601 Parser (Maybe a Library that Does this?)
+    for x in temp.index:
+        # Parse Hours
+        if 'H' in temp.at[x, 'result.duration']:
+            time_string = temp.at [x, 'result.duration']
+            temp.at[x, 'result.duration'] = pd.to_datetime(temp.at[x, 'result.duration'], format='PT%HH%MM%SS').time()
+        # Parse Minutes
+        elif 'M' in temp.at[x, 'result.duration']:
+            time_string = temp.at [x, 'result.duration']
+            temp.at[x, 'result.duration'] = pd.to_datetime(temp.at[x, 'result.duration'], format='PT%MM%SS').time()
+        # Parse Seconds
+        else:
+            time_string = temp.at [x, 'result.duration']
+            temp.at[x, 'result.duration'] = pd.to_datetime(temp.at[x, 'result.duration'], format='PT%SS').time()
+    dataframe = temp.copy()
+
+    # %%
+    # create time delta from datetime.time objects
+    dataframe['result.duration.seconds'] = 'NaN'
+
+    temp = dataframe.copy()
+    for x in temp.index:
+        time_string = temp.at[x, 'result.duration']
+        temp.at[x, 'result.duration.seconds'] = pd.to_timedelta(time_string.strftime(format="%H:%M:%S")).total_seconds()
+    dataframe = temp.copy()
+

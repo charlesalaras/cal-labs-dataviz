@@ -9,7 +9,8 @@ from .student import student_layout
 from .questionlayout import question_layout
 from dash.dependencies import Input, Output
 import json
-from .data import create_data
+from .data import create_instructor_data
+from .data import create_student_data
 from .question import create_questions
 
 
@@ -76,9 +77,39 @@ def init_callbacks(app):
           j = j + 1
       return html.Div(views)
    @app.callback(Output('container', 'children'),
-      Input('figure-list', 'value'))
-   def addinggraphsfromlist(value):
-      fig_objects = create_data(value)
+      Input('figure-list', 'value'), Input('student-email', 'value'))
+   def studentgraphs(value, email):
+      if(email == '' or '@' not in email):
+          fig_objects = create_instructor_data(value)
+      else:
+          fig_objects = create_student_data(value, 'mailto:' + email)
+      questions = create_questions(value)
+      graphs = []
+      j = 0
+      for i in range(0,len(fig_objects)):
+         columnSpacing = 'six columns'
+         if i == 0:
+             columnSpacing = 'twelve columns'
+         # Add Relevant Question
+         if i % 3 == 1 and j < len(questions):
+            graphs.append(html.Div(
+                className=(columnSpacing + ' fig'),
+                id='question-{}'.format(j),
+                children=questions[j]
+            ))
+            j = j + 1
+         # Add Relevant Graph
+         graphs.append(dcc.Graph(
+            className=(columnSpacing + ' fig'),
+            id='graph-{}'.format(i),
+            figure= fig_objects[i]
+         ))
+      return html.Div(graphs)
+
+   @app.callback(Output('container', 'children'),
+      Input('instructor-figure-list', 'value'))
+   def instructorgraphs(value, email):
+      fig_objects = create_instructor_data(value)
       questions = create_questions(value)
       graphs = []
       j = 0
