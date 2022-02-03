@@ -143,6 +143,7 @@ def create_data(module, actor="any"):
 
            # Calculate Averages of Question Scores
            question_avgs= question_avgs.append({'question': quiz_num, 'desc': temp_desc[x] , 'seconds': finalquiz_dataframe['result.duration.seconds'].mean(),
+               #FIXME: Crashes if "answered" in description
                    'raw score' :  math.ceil(finalquiz_dataframe['result.score.raw'].mean() ) , 'scaled score' :  finalquiz_dataframe['result.score.scaled'].mean() },ignore_index=True )
 
            # Create Averages Figure
@@ -222,18 +223,3 @@ def create_data(module, actor="any"):
 
    return fig_objects
 
-"""
-def parse_name(name):
-   current = ""
-   number = 0
-   for x in name:
-      # Week is Found, Drop it
-      if current is "Week ":
-         current = ""
-      # Module Number Found
-      elif isdigit(x) and current is "Module ":
-         number = int(x)
-      else:
-         current = current + x
-   return number
-"""

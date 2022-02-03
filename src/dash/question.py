@@ -47,10 +47,16 @@ def create_questions(value):
            # Correct Answer
            elementChoice = element.strip()
            if elementChoice in ns.answer:
-               choices.append(html.Li(
-                    className='correct',
-                    children=element
-               ))
+               if "image" in elementChoice:
+                    choices.append(html.Li(
+                        className='correct',
+                        children=html.Img(src='assets/' + str(value) + '/' + element)
+                    ))
+               else:
+                    choices.append(html.Li(
+                        className='correct',
+                        children=element
+                    ))
            # Fill in the Blank
            elif ns.question_type == 'fb':
                continue
