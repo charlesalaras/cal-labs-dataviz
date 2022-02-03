@@ -39,7 +39,7 @@ def create_data(module, actor="any"):
    # Stores timestamp loaded
    del dataframe['stored']
    # Stores User Email
-   del dataframe['actor.mbox']
+   # del dataframe['actor.mbox']
    # Stores Minimum Possible Score (If Available)
    del dataframe['result.score.min']
 
@@ -49,7 +49,8 @@ def create_data(module, actor="any"):
       temp = dataframe.loc[dataframe['object.definition.name.en-US'] == module].copy()
    else:
       # Student View, Aggregate Student Data for a Module
-      temp = dafaframe.loc[dataframe['actor.name'] == actor and dataframe['object.definition.name.en-US'] == module].copy()
+      temp = dataframe.loc[dataframe['object.definition.name.en-US'] == module].copy()
+      temp = temp.loc[temp['actor.mbox'] == actor].copy()
 
    # ISO8601 Parser (Maybe a Library that Does this?)
    for x in temp.index:

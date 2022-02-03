@@ -31,31 +31,38 @@ def requestmodules():
 # Layout for Student View
 student_layout = html.Div(style={'backgroundColor': colors['background']}, children=[
     html.H1(
-        children='Demo for hosted web app',
+        children='Cal Labs Data Analysis',
         style={
             'textAlign': 'center',
             'color': colors['text']
         }
     ),
 
-    html.Div(children='Dash: A web application framework for Python.', style={
+    html.Div(children='Welcome, {email}', style={
         'textAlign': 'center',
         'color': colors['text']
     }),
 
     dcc.Dropdown(
-        className='four columns',
-        id='figure-list',
+        className='twelve columns',
+        id='student-figure',
         options=requestmodules(),
         value="Week 2 Module 8: Method of Sections"
-    ),  
+    ),
+    dcc.Input(
+        className='twelve columns',
+        id='student-email',
+        type='email',
+        placeholder='Enter Email Here',
+        value=""
+    ),
     html.Div(id='dd-output-container', style={
         'textAlign': 'center',
         'color': colors['text']
     }),
-    html.Div(id='container'),
+    html.Div(id='student-container'),
     html.Div(
-        dcc.Graph( id='empty', figure={'data': []}), 
+        dcc.Graph( id='empty', figure={'data': []}),
             style={'display': 'none'}
             )
 ])

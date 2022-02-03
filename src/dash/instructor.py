@@ -74,7 +74,7 @@ instructor_layout = html.Div(style={'backgroundColor': colors['background']}, ch
         'textAlign': 'center',
         'color': colors['text']
     }),
-    html.Div(id='container'),
+    html.Div(id='instructor-container'),
     html.Div(
         dcc.Graph( id='empty', figure={'data': []}),
             style={'display': 'none'}
