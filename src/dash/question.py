@@ -7,14 +7,14 @@ from src.db import get_db, close_db
 from src.dash.topics import topics
 
 def create_questions(value):
-   questions = []
+   questions = [[], [], []]
    # DATABASE REQUEST: Grab Questions Specific to Module
    conn = get_db()
    module_questions = conn.execute("SELECT questions FROM modules WHERE name=:module", {'module': value}).fetchall()
    close_db()
    # Parse JSON String Into Python Object
    if module_questions[0][0] == None:
-       return questions
+       return []
    parsed_json = json.loads(str(module_questions[0][0]), object_hook=lambda d: SimpleNamespace(**d))
    # Convert Python Object Into HTML
    # question_type: skip
@@ -34,6 +34,11 @@ def create_questions(value):
        #    f.write(str(ns.answer) + ' ' + str(element) + '\n')
 
        currQuestion = []
+       # Are These New Sections?
+       if 'Test Your Understanding' in str(ns.section) and len(questions[1]) == 0:
+           i = 1
+       if 'Final' in str(ns.section) and len(questions[2]) == 0:
+           i = 1
        currQuestion.append(html.H5(str(ns.section) + ': Question ' + str(i)))
        for img in ns.images:
            currQuestion.append(html.Img(
@@ -89,7 +94,13 @@ def create_questions(value):
                children=topics[str(element)]
            ))
        currQuestion.append(html.Ul(concepts))
-       questions.append(currQuestion)
+       # Sort Into Sections
+       if 'Concept' in str(ns.section):
+           questions[0].append(currQuestion)
+       if 'Test Your Understanding' in str(ns.section):
+           questions[1].append(currQuestion)
+       if 'Final' in str(ns.section):
+           questions[2].append(currQuestion)
        i = i + 1
    # f.close()
    return questions

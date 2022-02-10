@@ -1,226 +1,271 @@
-# Code derived from https://github.com/guptaraghav29/PythonPlotly
-
 import json
+import numpy
+import sys
 import pandas as pd
 import plotly as plotly
 import plotly.io as pio
 import plotly.graph_objects as go
 import plotly.express as px
 from pandas import json_normalize
-# Unsure if works
-#from .db import get_db
+from types import SimpleNamespace
+sys.path.append('../src')
+from src.db import get_db, close_db
+from src.dash.topics import topics as def_topics
+import sqlite3
 
 # Add default theming
-pio.templates.default = "plotly_dark"
+#pio.templates.default = "plotly_dark"
+
+# Deletes extraneous data, fixes datetime strings, and aggregates module-specific data
+def filter_df(dataframe, module, actor):
+    # Stores Course Link
+    del dataframe['object.id']
+    # Stores 'Activity'
+    del dataframe['object.objectType']
+    # Stores type link
+    del dataframe['object.definition.type']
+    # Stores Access Level
+    del dataframe['authority.objectType']
+    # Stores LRS Link
+    del dataframe['authority.account.homePage']
+    # Stores 'authorization'
+    del dataframe['authority.account.name']
+    # Stores verb link
+    del dataframe['verb.id']
+    # Stores timestamp loaded
+    del dataframe['stored']
+    # Stores Minimum Possible Score (If Available)
+    del dataframe['result.score.min']
+
+
+    if actor == "any":
+        # Instructor View, Aggregate All Module Data
+        temp = dataframe.loc[dataframe['object.definition.name.en-US'] == module].copy()
+    else:
+        # Student View, Aggregate Student Data for a Module
+        temp = dataframe.loc[dataframe['object.definition.name.en-US'] == module].copy()
+        temp = temp.loc[temp['actor.mbox'] == actor].copy()
+    # ISO8601 Parser (Maybe a Library that Does this?)
+    for x in temp.index:
+        # Parse Hours
+        if 'H' in temp.at[x, 'result.duration']:
+            time_string = temp.at [x, 'result.duration']
+            temp.at[x, 'result.duration'] = pd.to_datetime(temp.at[x, 'result.duration'], format='PT%HH%MM%SS').time()
+        # Parse Minutes
+        elif 'M' in temp.at[x, 'result.duration']:
+            time_string = temp.at [x, 'result.duration']
+            temp.at[x, 'result.duration'] = pd.to_datetime(temp.at[x, 'result.duration'], format='PT%MM%SS').time()
+        # Parse Seconds
+        else:
+            time_string = temp.at [x, 'result.duration']
+            temp.at[x, 'result.duration'] = pd.to_datetime(temp.at[x, 'result.duration'], format='PT%SS').time()
+    dataframe = temp.copy()
+
+    # %%
+    # create time delta from datetime.time objects
+    dataframe['result.duration.seconds'] = 'NaN'
+
+    temp = dataframe.copy()
+    for x in temp.index:
+        time_string = temp.at [x, 'result.duration']
+        temp.at[x, 'result.duration.seconds'] = pd.to_timedelta(time_string.strftime( format="%H:%M:%S")).total_seconds()
+    dataframe = temp.copy()
+    return dataframe
+def check_correct(student_answers, answers):
+    # Answer Size must match!
+    if len(student_answers) != len(answers):
+        return False
+    # Matching sizes, compare each answer
+    for curr in range(0, len(student_answers)):
+        currCorrect = False
+        # Iterate Through Separate Strings
+        for search in range(0, len(answers)):
+            i = 0
+            j = 0
+            while i < len(student_answers[curr]) and j < len(answers[search]):
+                # Found a Match
+                if student_answers[curr][i].lower() == answers[search][j].lower():
+                    i = i + 1
+                    j = j + 1
+                # No Match, Keep Looking
+                else:
+                    j = j + 1
+            # While Loop Finished
+            if i >= len(student_answers[curr]):
+                currCorrect = True # Match was Found
+                break # Break Out of Lexiconical Loop
+        if not currCorrect: # Check If Broken or Ended
+            # print("Incorrect") # Ended, Could Not Find Match
+            return False
+    # Finished Successfully
+    # print("Correct")
+    return True
+def student_graphs(module_topics, responses, question, section, index):
+    answers = question.answer
+    # Show Responses for Each Attempt
+    temp = responses.sort_values(by=['result.extensions.http://id.tincanapi.com/extension/attempt-id'])
+    fig = px.histogram(temp, histfunc="count", x='result.extensions.http://id.tincanapi.com/extension/attempt-id', color='result.response')
+    fig.update_layout(xaxis={'categoryorder':'total descending'})
+    fig.update_layout(title="Responses for " + section + " Q"  + str(index + 1))
+    # Check only last attempt
+    attempts = responses['result.extensions.http://id.tincanapi.com/extension/attempt-id'].unique()
+    responses = responses.loc[responses['result.extensions.http://id.tincanapi.com/extension/attempt-id'] == attempts[-1]].copy()
+    # Get Student Responses
+    student_answers = list(responses['result.response'])
+    # Compare If It Is Correct
+    if check_correct(student_answers, answers):
+        for topic in question.topics:
+            # Aggregate Learning Objective Score GLOBALLY
+            module_topics[str(topic)]['score'] = module_topics[str(topic)]['score'] + 1
+    return fig
 
 # Creates the data based on module chosen
-def create_data(module, actor="any"):
+def create_data(value, actor="any"):
+    # Get Questions from Database
+    #f = open("dat_log.txt", "w")
+    # Use in Production Build!
+    conn = get_db()
+    module_questions = conn.execute("SELECT questions FROM modules WHERE name=:module", {'module': value}).fetchall()
+    close_db()
 
-   # Open and Parse LRS JSON
-   with open('sample_lrs.json') as json_file:
-      xapiData = json.load(json_file)
+    # Use in Debug Build!
+    """
+    conn = sqlite3.connect('flaskr.db', detect_types=sqlite3.PARSE_DECLTYPES)
+    conn.row_factory = sqlite3.Row
+    module_questions = conn.execute("SELECT questions FROM modules WHERE name=:module", {'module': value}).fetchall()
+    conn.close()
+    """
+    # Parse JSON Question String Into Python Object
+    if module_questions[0][0] == None:
+        raise Exception("Failed to get correct module")
+    fetched_questions = json.loads(str(module_questions[0][0]), object_hook=lambda d: SimpleNamespace(**d))
+    # Build Set of Module Topics + Sort Questions
+    concept_questions = []
+    tyu_questions = []
+    final_questions = []
+    module_topics = {}
+    for question in fetched_questions:
+        if "Concept" in str(question.section):
+            concept_questions.append(question)
+        elif "Test Your Understanding" in str(question.section):
+            tyu_questions.append(question)
+        elif "Final" in str(question.section):
+            final_questions.append(question)
+        for topic in question.topics:
+            if str(topic) not in module_topics:
+                module_topics[str(topic)] = {'max': 1, 'score': 0 }
+            else:
+                module_topics[str(topic)]['max'] = module_topics[str(topic)]['max'] + 1
+    fig_objects = []
+    # Open and Parse LRS JSON
+    with open('ucrstaticsw22.json') as json_file:
+        xapiData = json.load(json_file)
+    # Unfiltered Dataframe
+    dataframe = json_normalize(xapiData)
+    # Filtered Dataframe
+    dataframe = filter_df(dataframe, value, actor)
 
-   dataframe = json_normalize(xapiData)
+    # Only the Answers Dataframe
+    response_data = dataframe.loc[(dataframe['verb.display.en-US'] == "answered")].copy()
+    # Use as a Questions Dictionary: The Identifier
+    response_desc = response_data['object.definition.description.en-US'].unique()
+    #f.write(str(response_data) + '\n')
 
-   # Stores Course Link
-   del dataframe['object.id']
-   # Stores 'Activity'
-   del dataframe['object.objectType']
-   # Stores type link
-   del dataframe['object.definition.type']
-   # Stores Access Level
-   del dataframe['authority.objectType']
-   # Stores LRS Link
-   del dataframe['authority.account.homePage']
-   # Stores 'authorization'
-   del dataframe['authority.account.name']
-   # Stores verb link
-   del dataframe['verb.id']
-   # Stores timestamp loaded
-   del dataframe['stored']
-   # Stores User Email
-   # del dataframe['actor.mbox']
-   # Stores Minimum Possible Score (If Available)
-   del dataframe['result.score.min']
+    if actor == "any": # Instructor View : Deal with Later...
+        pass
+    else: # Student View : Anonymously Aggregate Data
 
-   fig_objects = []
-   if actor == "any":
-      # Instructor View, Aggregate All Module Data
-      temp = dataframe.loc[dataframe['object.definition.name.en-US'] == module].copy()
-   else:
-      # Student View, Aggregate Student Data for a Module
-      temp = dataframe.loc[dataframe['object.definition.name.en-US'] == module].copy()
-      temp = temp.loc[temp['actor.mbox'] == actor].copy()
+        # question_averages = 0 # Use for time deltas?
 
-   # ISO8601 Parser (Maybe a Library that Does this?)
-   for x in temp.index:
-       # Parse Hours
-       if 'H' in temp.at[x, 'result.duration']:
-           time_string = temp.at [x, 'result.duration']
-           temp.at[x, 'result.duration'] = pd.to_datetime(temp.at[x, 'result.duration'], format='PT%HH%MM%SS').time()
-       # Parse Minutes
-       elif 'M' in temp.at[x, 'result.duration']:
-           time_string = temp.at [x, 'result.duration']
-           temp.at[x, 'result.duration'] = pd.to_datetime(temp.at[x, 'result.duration'], format='PT%MM%SS').time()
-       # Parse Seconds
-       else:
-           time_string = temp.at [x, 'result.duration']
-           temp.at[x, 'result.duration'] = pd.to_datetime(temp.at[x, 'result.duration'], format='PT%SS').time()
-   dataframe = temp.copy()
+        concept_index = 0
+        tyu_index = 0
+        final_index = 0
+        # Create the DF with only the Actor
+        response_data = response_data.loc[response_data['actor.mbox'] == actor].copy()
+        # Create Graphs For Questions
+        for i in range(0, response_desc.size):
+            # Filter Out Anything that is not the response description
+            curr_data = response_data.loc[(response_data['object.definition.description.en-US'] == response_desc[i])].copy()
+            # Aggregate Answers to a Concept Quiz Question
+            if "concept" in response_desc[i]:
+                fig_objects.append(student_graphs(module_topics, curr_data, concept_questions[concept_index], "Concept", concept_index))
+                concept_index = concept_index + 1
+            # Aggregate Answers to a Test Your Understanding Quiz Question
+            if "tyu" in response_desc[i]:
+                fig_objects.append(student_graphs(module_topics, curr_data, tyu_questions[tyu_index], "Test Your Understanding", tyu_index))
+                tyu_index = tyu_index + 1
+            # Aggregate Answers to a Final Quiz Question
+            if "module Q" in response_desc[i]:
+                fig_objects.append(student_graphs(module_topics, curr_data, final_questions[final_index], "Final", final_index))
+                final_index = final_index + 1
 
-   # %%
-   # create time delta from datetime.time objects
-   dataframe['result.duration.seconds'] = 'NaN'
+        # Finally... Aggregate Module Topics
+        objectives = {}
+        for i in module_topics.keys():
+            objectives[str(def_topics[i])] = (module_topics[i]['score'] / module_topics[i]['max'])*100
+        objectives = pd.DataFrame.from_dict(objectives, orient='index', columns=['Percent'])
+        fig = px.bar(objectives, orientation='h', color=objectives.index)
+        fig.update_layout(xaxis_title="Success Rate", yaxis_title="Objective", title="Learning Objective Performance")
+        fig_objects.insert(0, fig)
+        pd.set_option('display.max_columns', None)
+        # print(objectives)
+        #for i in fig_objects:
+            #f.write(str(type(i)) + '\n')
+        #f.close()
+    return fig_objects
+"""
+    if actor is "any": # Instructor View : Aggregate Data Explicitly
+        # Overall Stats Figure
+        actors = dataframe.loc[dataframe['verb.display.en-US'] == "exited"].copy()
 
-   temp = dataframe.copy()
-   for x in temp.index:
-       time_string = temp.at [x, 'result.duration']
-       temp.at[x, 'result.duration.seconds'] = pd.to_timedelta(time_string.strftime( format="%H:%M:%S")).total_seconds()
-   dataframe = temp.copy()
+        user_stats = go.Figure()
+        user_stats.add_trace(go.Indicator(
+            mode = 'number',
+            value = dataframe['actor.name'].nunique(),
+            title = {'text': "Number of Students"},
+            domain = {'row': 0, 'column': 0}
+        ))
+        user_stats.add_trace(go.Indicator(
+            mode = 'number',
+            number = {'suffix': ' mins'},
+            value = (temp['result.duration.seconds'].mean() / 60),
+            title = {'text': "Average Module Completion"},
+            domain = {'row': 0, 'column': 1}
+        ))
+        user_stats.update_layout(grid = {'rows': 2, 'columns': 2})
 
-   # Figure 1
-   # Unique Actors for a Module
+        fig_objects.append(user_stats)
 
-   fig = go.Figure()
+        question_averages = 0
 
-   fig.add_trace(go.Indicator(
-       mode = 'number',
-       value = dataframe['actor.name'].nunique(),
-       title = {'text': "unique actors"},
-        domain = {'row': 0, 'column': 0}
-       ))
+        concept_index = 0
+        tyu_index = 0
+        final_index = 0
+        # Create Graphs For Questions
+        for i in range(0, response_desc.size):
+            # Aggregate Answers to a Concept Quiz Question
+            if "concept" in response_desc[i]:
+                fig_objects = fig_objects + instructor_graphs(response_desc[i], module_topics, concept_index, response_data, fetched_questions)
+                concept_index = concept_index + 1
+            # Aggregate Answers to a Test Your Understanding Quiz Question
+            if "tyu" in response_desc[i]:
+                fig_objects = fig_objects + instructor_graphs(response_desc[i], module_topics, tyu_index, response_data)
+                tyu_index = tyu_index + 1
+            # Aggregate Answers to a Final Quiz Question
+            if "module Q" in response_desc[i]:
+                fig_objects = fig_objects + instructor_graphs(response_desc[i], module_topics, final_index, response_data)
+                final_index = final_index + 1
 
-   temp = dataframe.loc[dataframe['verb.display.en-US'] == "exited"].copy()
-
-   fig.add_trace(go.Indicator(
-       mode = 'number',
-       number = {'suffix': ' mins'},
-       value = (temp['result.duration.seconds'].mean() / 60) ,
-       title = {'text': "Average Module Completion"},
-       domain = {'row': 0, 'column': 1}
-       ))
-   # create grid
-   fig.update_layout(
-       grid = {'rows': 2, 'columns': 2})
-
-   fig_objects.append(fig)
-
-
-   # Parse Questions
-   # create list of answered descriptions
-   temp = dataframe.loc[(dataframe['verb.display.en-US'] == "answered") ].copy()
-   temp_desc = temp['object.definition.description.en-US'].unique()
-   # array has been sorted
+def instructor_graphs(section, module_topics, index, responses):
+    graphs = []
+    df = responses.loc[(responses['object.definition.description.en-US'] == section)].copy()
+    df = df.sort_values(by=['result.response'])
+    fig = px.histogram(df, histfunc="count", x='result.response', color = 'result.response')
+    fig.update_layout(xaxis={'categoryorder':'total descending'})
+    fig.update_layout(title="Responses for Concept Q" + str(index + 1))
+    graphs.append(fig)
+    return graphs
 
 
-   # Question Number
-   quiz_num = 0
-   # Grab Score Data into DataFrame
-   question_avgs =  pd.DataFrame(columns = ['question', 'desc', 'seconds','raw score', 'scaled score'])
-
-   # ceiling function
-   import math
-
-   # make all the graphs in loop
-   for x in range(0, temp_desc.size):
-       # Final Quiz
-       if "3." in temp_desc[x]:
-           quiz_num = quiz_num + 1
-           finalquiz_dataframe = temp.loc[(temp['object.definition.description.en-US'] == temp_desc[x])].copy()
-           finalquiz_dataframe = finalquiz_dataframe.sort_values(by=['result.response'])
-           # Create Histogram + Details
-           fig = px.histogram(finalquiz_dataframe, histfunc="count", x='result.response', color='result.response')
-           fig.update_layout( xaxis={'categoryorder':'total descending'})
-           # FIXME: Question is Hardcoded here
-           fig.update_layout(title="Responses for Final Q" + str(quiz_num))
-           # Append Histogram Plot Figure
-           fig_objects.append(fig)
-
-           # Create Scatter + Details
-           fig = px.scatter(finalquiz_dataframe,x='actor.name', y = 'result.score.scaled', color='actor.name')
-           fig.update_layout(title="Student Scores for Final Q"  + str(quiz_num))
-           # Append Scatter Plot Figure
-           fig_objects.append(fig)
-
-           # Calculate Averages of Question Scores
-           question_avgs= question_avgs.append({'question': quiz_num, 'desc': temp_desc[x] , 'seconds': finalquiz_dataframe['result.duration.seconds'].mean(),
-               #FIXME: Crashes if "answered" in description
-                   'raw score' :  math.ceil(finalquiz_dataframe['result.score.raw'].mean() ) , 'scaled score' :  finalquiz_dataframe['result.score.scaled'].mean() },ignore_index=True )
-
-           # Create Averages Figure
-           fig = go.Figure()
-
-           # Average Raw Score
-           fig.add_trace(go.Indicator(
-               mode = 'number',
-               number = {'suffix': ' points'},
-               value = ( (question_avgs.at[quiz_num - 1, 'raw score'] ) ),
-               title = {'text': "Average Raw Score: Q" +  str(quiz_num) },
-                domain = {'x': [0, 0.5], 'y': [0, 0.5]}
-               ))
-
-           # Average Scaled Score
-           fig.add_trace(go.Indicator(
-               mode = 'number',
-               number = {'suffix': ' points'},
-               value = ( question_avgs.at[quiz_num - 1, 'scaled score'] ) ,
-               title = {'text':"Average scaled Score: Q" +  str(quiz_num)},
-               domain = {'x': [0, 0.5], 'y': [0.5, 1]}
-               ))
-
-           # Average Time Spent on Question
-           fig.add_trace(go.Indicator(
-           mode = 'number', number = {'suffix': ' mins'},
-           value = finalquiz_dataframe['result.duration.seconds'].mean() / 60,
-           title = {'text': "Average Time: Q"  +  str(quiz_num)},
-           domain={'x': [0.6, 1], 'y': [0, 1]}
-           ))
-           # create grid
-           fig.update_layout(
-               grid = {'rows': 3, 'columns': 2})
-
-           # Append Averages Figure
-           fig_objects.append(fig)
-
-   # Create Average Completion Figure
-   fig = go.Figure()
-   fig.add_trace(go.Indicator(
-       mode = 'number',
-       number = {'suffix': ' mins'},
-       value = ( question_avgs['seconds'].mean() / 60),
-       title = {'text': "Avg Response"},
-       domain = {'row': 0, 'column': 0}
-       ))
-   fig.add_trace(go.Indicator(
-       mode = 'number',
-       number = {'suffix': ' mins'},
-       value = (( question_avgs['seconds'].sum() ) / 60) ,
-       title = {'text': "Avg Quiz Completion"},
-       domain = {'row': 0, 'column': 1}
-       ))
-   # create grid
-   fig.update_layout(
-       grid = {'rows': 2, 'columns': 2})
-
-   # Append Average Completion Figure
-   fig_objects.append(fig)
-
-   # Final Aggregate Plots
-
-   # Seconds Per Question
-   fig = px.line(question_avgs, x = 'question' , y = 'seconds', markers=True, title="Seconds Per Question")
-
-   fig_objects.append(fig)
-
-   # Raw Score Per Question
-   fig = px.line(question_avgs, x = 'question' , y = 'raw score',  title="Raw Score Per Question", markers=True)
-
-   fig_objects.append(fig)
-
-   # Scaled Score Per Question
-   fig = px.line(question_avgs, x = 'question' , y = 'scaled score', title="scaled Score Per Question", markers=True)
-
-   fig_objects.append(fig)
-
-   return fig_objects
+"""
 

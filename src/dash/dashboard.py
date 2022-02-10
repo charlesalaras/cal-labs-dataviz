@@ -1,5 +1,5 @@
 # Layout pulled from https://github.com/guptaraghav29/PythonPlotly
-
+import re
 import dash
 import flask
 from dash import dcc
@@ -84,19 +84,27 @@ def init_callbacks(app):
             fig_objects = create_data(value, 'mailto:' + email)
         questions = create_questions(value)
         graphs = []
-        j = 0
+        ref = 0
+        currQ = 0
         for i in range(0, len(fig_objects)):
             columnSpacing = 'six columns'
             if i == 0:
                 columnSpacing = 'twelve columns'
             # Add Relevant Question
-            if i % 3 == 1 and j < len(questions):
+            else:
+                if 'Concept' in str(fig_objects[i].layout.title.text):
+                    ref = 0
+                if 'Test Your Understanding' in str(fig_objects[i].layout.title.text):
+                    ref = 1
+                if 'Final' in str(fig_objects[i].layout.title.text):
+                    ref = 2
+                currQ = re.findall(r'\d+', str(fig_objects[i].layout.title.text))
+                currQ = int(currQ[0]) - 1
                 graphs.append(html.Div(
                     className=(columnSpacing + ' fig'),
-                    id='question-{}'.format(j),
-                    children=questions[j]
+                    id='question-{}'.format(i),
+                    children=questions[ref][currQ]
                 ))
-                j = j + 1
             # Add Relevant Graph
             graphs.append(dcc.Graph(
                 className=(columnSpacing + ' fig'),
