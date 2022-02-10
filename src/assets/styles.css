@@ -177,7 +177,12 @@ body {
   border-radius: 5px;
   background-color: rgba(40, 167, 69, 0.25);
 }
-
+img {
+  height: 25%;
+  width: 25%;
+  max-height: 200px;
+  max-width: 200px;
+}
 /* Typography
 –––––––––––––––––––––––––––––––––––––––––––––––––– */
 h1, h2, h3, h4, h5, h6 {

@@ -14,7 +14,7 @@ from src.dash.topics import topics as def_topics
 import sqlite3
 
 # Add default theming
-#pio.templates.default = "plotly_dark"
+pio.templates.default = "plotly_dark"
 
 # Deletes extraneous data, fixes datetime strings, and aggregates module-specific data
 def filter_df(dataframe, module, actor):
@@ -104,9 +104,12 @@ def student_graphs(module_topics, responses, question, section, index):
     answers = question.answer
     # Show Responses for Each Attempt
     temp = responses.sort_values(by=['result.extensions.http://id.tincanapi.com/extension/attempt-id'])
-    fig = px.histogram(temp, histfunc="count", x='result.extensions.http://id.tincanapi.com/extension/attempt-id', color='result.response')
-    fig.update_layout(xaxis={'categoryorder':'total descending'})
-    fig.update_layout(title="Responses for " + section + " Q"  + str(index + 1))
+    fig = go.Figure(data=[go.Table(
+        header=dict(values=['Attempt Number' , 'Response', 'Duration'],
+        align='center'),
+        cells=dict(values=[temp['result.extensions.http://id.tincanapi.com/extension/attempt-id'], temp['result.response'], temp['result.duration.seconds']], align='center'))
+    ])
+    fig.update_layout(title="Responses for " + section + " Q" + str(index + 1))
     # Check only last attempt
     attempts = responses['result.extensions.http://id.tincanapi.com/extension/attempt-id'].unique()
     responses = responses.loc[responses['result.extensions.http://id.tincanapi.com/extension/attempt-id'] == attempts[-1]].copy()

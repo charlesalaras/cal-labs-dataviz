@@ -87,6 +87,7 @@ def init_callbacks(app):
         ref = 0
         currQ = 0
         for i in range(0, len(fig_objects)):
+            questionDiv = []
             columnSpacing = 'six columns'
             if i == 0:
                 columnSpacing = 'twelve columns'
@@ -100,17 +101,18 @@ def init_callbacks(app):
                     ref = 2
                 currQ = re.findall(r'\d+', str(fig_objects[i].layout.title.text))
                 currQ = int(currQ[0]) - 1
-                graphs.append(html.Div(
-                    className=(columnSpacing + ' fig'),
+                questionDiv.append(html.Div(
+                    className=(columnSpacing),
                     id='question-{}'.format(i),
                     children=questions[ref][currQ]
                 ))
             # Add Relevant Graph
-            graphs.append(dcc.Graph(
-                className=(columnSpacing + ' fig'),
+            questionDiv.append(dcc.Graph(
+                className=(columnSpacing),
                 id='graph-{}'.format(i),
                 figure=fig_objects[i]
             ))
+            graphs.append(html.Div(className='twelve columns fig', children=questionDiv))
         return html.Div(graphs)
    @app.callback(Output('instructor-container', 'children'),
       Input('figure-list', 'value'))

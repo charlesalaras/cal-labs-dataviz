@@ -9,8 +9,8 @@ sys.path.append('../src')
 from src.db import get_db, close_db
 
 colors = {
-   'background': '#FFFFFF',
-   'text': '#12121F'
+   'background': '#111111',
+   'text': '#FFFFFF'
 }
 
 def requestmodules():
@@ -38,7 +38,7 @@ student_layout = html.Div(style={'backgroundColor': colors['background']}, child
         }
     ),
 
-    html.Div(children='Welcome, {email}', style={
+    html.Div(children='Welcome, Student!', style={
         'textAlign': 'center',
         'color': colors['text']
     }),
