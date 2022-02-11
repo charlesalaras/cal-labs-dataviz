@@ -108,19 +108,21 @@ def init_callbacks(app):
       Input('figure-list', 'value'))
    def addinggraphsfromlist(value):
       fig_objects = create_data(value)
-      questions = create_questions(value)
+      #questions = create_questions(value)
       graphs = []
       j = 0
       for i in range(0,len(fig_objects)):
          columnSpacing = 'six columns'
          if i == 0:
              columnSpacing = 'twelve columns'
+         if i > 0 and i < 6:
+             columnSpacing = 'twelve columns'
          # Add Relevant Question
-         if i % 3 == 1 and j < len(questions):
+         if i % 3 == 0 and i > 5:
             graphs.append(html.Div(
                 className=(columnSpacing + ' fig'),
-                id='question-{}'.format(j),
-                children=questions[j]
+                id='question-{}'.format(i),
+                children=html.H1("Question Goes Here")
             ))
             j = j + 1
          # Add Relevant Graph

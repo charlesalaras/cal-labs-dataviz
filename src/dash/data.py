@@ -1,5 +1,5 @@
 # Code derived from https://github.com/guptaraghav29/PythonPlotly
-
+import random
 import json
 import pandas as pd
 import plotly as plotly
@@ -7,8 +7,6 @@ import plotly.io as pio
 import plotly.graph_objects as go
 import plotly.express as px
 from pandas import json_normalize
-# Unsure if works
-#from .db import get_db
 
 # Add default theming
 pio.templates.default = "plotly_dark"
@@ -130,7 +128,7 @@ def create_data(module, actor="any"):
            finalquiz_dataframe = finalquiz_dataframe.sort_values(by=['result.response'])
            # Create Histogram + Details
            fig = px.histogram(finalquiz_dataframe, histfunc="count", x='result.response', color='result.response')
-           fig.update_layout( xaxis={'categoryorder':'total descending'})
+           fig.update_layout(xaxis_title='Response', xaxis={'categoryorder':'total descending'})
            # FIXME: Question is Hardcoded here
            fig.update_layout(title="Responses for Final Q" + str(quiz_num))
            # Append Histogram Plot Figure
@@ -138,7 +136,7 @@ def create_data(module, actor="any"):
 
            # Create Scatter + Details
            fig = px.scatter(finalquiz_dataframe,x='actor.name', y = 'result.score.scaled', color='actor.name')
-           fig.update_layout(title="Student Scores for Final Q"  + str(quiz_num))
+           fig.update_layout(xaxis_title='Student Name', yaxis_title='Scaled Score', title="Student Scores for Final Q"  + str(quiz_num))
            # Append Scatter Plot Figure
            fig_objects.append(fig)
 
@@ -155,7 +153,7 @@ def create_data(module, actor="any"):
                mode = 'number',
                number = {'suffix': ' points'},
                value = ( (question_avgs.at[quiz_num - 1, 'raw score'] ) ),
-               title = {'text': "Average Raw Score: Q" +  str(quiz_num) },
+               title = {'text': "Average Raw Score: Question " +  str(quiz_num) },
                 domain = {'x': [0, 0.5], 'y': [0, 0.5]}
                ))
 
@@ -164,7 +162,7 @@ def create_data(module, actor="any"):
                mode = 'number',
                number = {'suffix': ' points'},
                value = ( question_avgs.at[quiz_num - 1, 'scaled score'] ) ,
-               title = {'text':"Average scaled Score: Q" +  str(quiz_num)},
+               title = {'text':"Average scaled Score: Question " +  str(quiz_num)},
                domain = {'x': [0, 0.5], 'y': [0.5, 1]}
                ))
 
@@ -172,12 +170,12 @@ def create_data(module, actor="any"):
            fig.add_trace(go.Indicator(
            mode = 'number', number = {'suffix': ' mins'},
            value = finalquiz_dataframe['result.duration.seconds'].mean() / 60,
-           title = {'text': "Average Time: Q"  +  str(quiz_num)},
+           title = {'text': "Average Time: Question "  +  str(quiz_num)},
            domain={'x': [0.6, 1], 'y': [0, 1]}
            ))
            # create grid
            fig.update_layout(
-               grid = {'rows': 3, 'columns': 2})
+               grid = {'rows': 3, 'columns': 2}, title="Averages for Question " + str(quiz_num))
 
            # Append Averages Figure
            fig_objects.append(fig)
@@ -188,14 +186,14 @@ def create_data(module, actor="any"):
        mode = 'number',
        number = {'suffix': ' mins'},
        value = ( question_avgs['seconds'].mean() / 60),
-       title = {'text': "Avg Response"},
+       title = {'text': "Average Response"},
        domain = {'row': 0, 'column': 0}
        ))
    fig.add_trace(go.Indicator(
        mode = 'number',
        number = {'suffix': ' mins'},
        value = (( question_avgs['seconds'].sum() ) / 60) ,
-       title = {'text': "Avg Quiz Completion"},
+       title = {'text': "Average Quiz Completion"},
        domain = {'row': 0, 'column': 1}
        ))
    # create grid
@@ -203,24 +201,39 @@ def create_data(module, actor="any"):
        grid = {'rows': 2, 'columns': 2})
 
    # Append Average Completion Figure
-   fig_objects.append(fig)
+   fig_objects.insert(0,fig)
 
    # Final Aggregate Plots
 
    # Seconds Per Question
    fig = px.line(question_avgs, x = 'question' , y = 'seconds', markers=True, title="Seconds Per Question")
 
-   fig_objects.append(fig)
+   fig_objects.insert(0,fig)
 
    # Raw Score Per Question
    fig = px.line(question_avgs, x = 'question' , y = 'raw score',  title="Raw Score Per Question", markers=True)
 
-   fig_objects.append(fig)
+   fig_objects.insert(0,fig)
 
    # Scaled Score Per Question
-   fig = px.line(question_avgs, x = 'question' , y = 'scaled score', title="scaled Score Per Question", markers=True)
+   fig = px.line(question_avgs, x = 'question' , y = 'scaled score', title="Scaled Score Per Question", markers=True)
 
-   fig_objects.append(fig)
+   fig_objects.insert(0,fig)
+   if module != "Week 5 Module 12: Friction":
+       objectives = {'null': 0}
+   else:
+       objectives = {
+          'Free Body Diagram': random.randint(0, 78),
+          '2-Dimensional Forces': random.randint(0, 60),
+          'Friction': random.randint(80, 100),
+          'Trigonometry': random.randint(0, 50),
+          '2-Dimensional Vectors': random.randint(0, 70),
+          '2-Dimensional Equilibrium': random.randint(0, 20),
+       }
+   objectives = pd.DataFrame.from_dict(objectives, orient='index', columns=['Percent'])
+   fig = px.bar(objectives, orientation='h', color=objectives.index)
+   fig.update_layout(xaxis_title="Success Rate", yaxis_title="Objective", title="Aggregate Learning Objective Performance")
+   fig_objects.insert(0, fig)
 
    return fig_objects
 

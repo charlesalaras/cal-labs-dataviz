@@ -177,7 +177,10 @@ body {
   border-radius: 5px;
   background-color: rgba(40, 167, 69, 0.25);
 }
-
+.fig h1 {
+  color: #AAAAAA;
+}
+.fig { text-align: center; }
 /* Typography
 –––––––––––––––––––––––––––––––––––––––––––––––––– */
 h1, h2, h3, h4, h5, h6 {
