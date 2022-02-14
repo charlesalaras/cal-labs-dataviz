@@ -9,7 +9,7 @@ A Flask based visualization app created for Cal Labs
 ### `src`
 Contains all source files for the application.
 ### `wsgi.py`
-The direct entry point to the application. Simply run `python3 wsgi.py` to start the application on your local network. Calls `init_app()` from `src/init_app`. There are placeholder authentication variables that are currently not in use. The app runs in debug mode.
+The direct entry point to the application. Simply run `python3 wsgi.py` to start the application on your local network. Calls `init_app()` from `src/__init__.py`. There are placeholder authentication variables that are currently not in use. The app runs in debug mode.
 ### `.gitignore`
 The files ignored are described as follows:
 - `.env`: Contains the variable for the absolute path of the database. Used in `db.py:10`
