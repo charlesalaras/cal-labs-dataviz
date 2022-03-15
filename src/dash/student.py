@@ -16,12 +16,12 @@ colors = {
 def requestmodules():
    # FIXME: Grab Existing Modules from Database
    conn = get_db()
-   modules = conn.execute('SELECT * FROM modules').fetchall()
+   modules = conn.execute('SELECT name, id FROM modules').fetchall()
    close_db()
    options = []
    for module in modules:
       currDict = {
-         'label': 'Module ' + str(module[2]),
+         'label': module[0],
          'value': module[1]
       }
       options.append(currDict)
