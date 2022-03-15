@@ -53,11 +53,11 @@ def init_callbacks(app):
          })
    @app.callback(
    Output('dd-output-container', 'children'),
-      Input('figure-list', 'value')
+      Input('figure-list', 'label')
    )
    def update_output(value):
       return html.H4(
-         children='You have selected "{}"'.format(value),
+         children='You have selected "{}"'.format(label),
          style={
          'textAlign': 'center'
          })
@@ -69,7 +69,7 @@ def init_callbacks(app):
       j = 0
       for i in range(0, len(questions)):
           views.append(html.Div(
-               className='twelve columns fig',
+               className='twelve columns',
                id='question-{}'.format(j),
                children=questions[j]
           ))
