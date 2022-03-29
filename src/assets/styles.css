@@ -133,30 +133,10 @@ body {
   line-height: 1.6;
   font-weight: 400;
   font-family: "Open Sans", "HelveticaNeue", "Helvetica Neue", Helvetica, Arial, sans-serif;
-  color: white;
-  background-color: #111111;
+  color: #000020;
+  background-color: #ffffff;
   }
 
-.Select-value-label {
-  color: white !important;
-}
-
-.Select-value {
-  background-color: #111111;
-  color: white;
-}
-.Select-input {
-  background-color: #111111;
-  color: white;
-}
-.Select-control {
-  background-color: #111111;
-  color: white;
-}
-.Select-menu {
-  background-color: #111111;
-  color: white;
-}
 .fig {
   border:2px solid #222222;
   border-radius: 10px;
@@ -175,6 +155,7 @@ body {
 .correct {
   border: 1px solid #28A745;
   border-radius: 5px;
+  max-width: 50%;
   background-color: rgba(40, 167, 69, 0.25);
 }
 .fig h1 {

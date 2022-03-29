@@ -7,8 +7,8 @@ from .question import create_questions
 from .instructor import requestmodules
 
 colors = {
-    'background': '#111111',
-    'text': '#FFFFFF'
+    'background': '#FFFFFF',
+    'text': '#000020'
 }
 
 question_layout = html.Div(
@@ -27,8 +27,6 @@ question_layout = html.Div(
             style={
                 'margin': 'auto',
                 'display': 'block',
-                'background-color': '#222222',
-                'color': 'white'
             },
             options=requestmodules(),
             value='Moment'

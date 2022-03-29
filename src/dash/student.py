@@ -10,7 +10,7 @@ from src.db import get_db, close_db
 
 colors = {
    'background': '#FFFFFF',
-   'text': '#12121F'
+   'text': '#000020'
 }
 
 def requestmodules():
@@ -42,6 +42,11 @@ student_layout = html.Div(style={'backgroundColor': colors['background']}, child
         'textAlign': 'center',
         'color': colors['text']
     }),
+
+    dcc.Tabs(id='student-tabs', value='by-module', children=[
+        dcc.Tab(label='Module Overview', value='by-module'),
+        dcc.Tab(label='Topic Overview', value='by-topic'),
+    ]),
 
     dcc.Dropdown(
         className='twelve columns',

@@ -7,6 +7,8 @@ from src.db import get_db, close_db
 from src.dash.topics import topics as topicdict
 
 def build_question(qid, slug, answers, correct, images, topics, section, number):
+   if "Test Your Understanding" in section:
+       return None;
    build = {
       'id': qid,
       'type': str(slug['type']),
@@ -36,7 +38,10 @@ def create_questions(value):
        # FIXME: Use just image src paths as the ID
        images = conn.execute("SELECT images.image_src FROM images LEFT JOIN question_images ON images.id=question_images.image_id WHERE question_images.question_id=:question", {'question': question[0]}).fetchall()
        topics = conn.execute("SELECT topics.title FROM topics LEFT JOIN question_topics ON topics.id=question_topics.topic_id WHERE question_topics.question_id=:question", {'question': question[0]}).fetchall()
-       request.append(build_question(question[0], slug, answers, key_answer, images, topics, question[1], question[2]))
+       if build_question(question[0], slug, answers, key_answer, images, topics, question[1], question[2]) == None:
+           pass
+       else:
+           request.append(build_question(question[0], slug, answers, key_answer, images, topics, question[1], question[2]))
    close_db()
    # Convert Python Object Into HTML
    # question_type: skip
