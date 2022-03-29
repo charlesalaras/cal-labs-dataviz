@@ -12,14 +12,14 @@ sys.path.append('../src')
 from src.db import get_db, close_db
 from src.dash.topics import topics as def_topics
 
-def checkCorrect(student_answers, desc) {
+def checkCorrect(student_answers, desc):
    # Find question that matches descriptor
    # Find answer key that matches question
    # Compare lists (true / false)
       # Compare List Size
       # Compare Answer Slugs
    return True
-}
+
 def parse_lrs(module, actor="any"): # Parses out the LRS
    # Open and Parse LRS JSON
    with open('ucrstaticsw22.json') as json_file:
@@ -201,7 +201,7 @@ def topicAnalysis(lrs, module, actor="any"): # Create Topics Aggregate
             responses = responses.loc[responses['result.extensions.http://id.tincanapi.com/extension/attempt-id'] == attempts[-1]].copy()
             student_responses = list(responses['result.response'])
    # Check against key if its close to answer
-            if check_correct(student_responses temp_desc[x]):
+            if check_correct(student_responses, temp_desc[x]):
                question_topics = []
    # Add to topic based on what topics correlate (need to get the title similar enough)
             for topic in question_topics:
