@@ -42,6 +42,7 @@ def init_callbacks(app):
        lrs = parse_lrs(module)
        fig_objects = create_questionGraphs(lrs, module)
        content = [html.Div(className='twelve columns', children=unique_actors(lrs, module))]
+       content.append(html.Div(className='twelve columns', children=topicAnalysis(lrs, module)))
        j = 0
        for i in fig_objects.keys():
           content.append(html.Div(className='twelve columns', children=dcc.Tabs(children=[

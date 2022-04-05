@@ -1,3 +1,4 @@
+import re
 import json
 import sys
 import math
@@ -12,13 +13,77 @@ sys.path.append('../src')
 from src.db import get_db, close_db
 from src.dash.topics import topics as def_topics
 
-def checkCorrect(student_answers, desc):
+def studentFilter(lrs_copy, questions, module_topics, module, student):
+   # Filter By Student
+   dataframe = lrs_copy.loc[lrs_copy['actor.mbox'] == student].copy()
+   for i in range(0, questions.size):
+      # Filter By Current Question
+      curr_data = dataframe.loc[(dataframe['object.definition.description.en-US'] == questions[i])].copy()
+      # Get List of attempts
+      attempts = list(curr_data['result.extensions.http://id.tincanapi.com/extension/attempt-id'].unique())
+      # Get Last Attempt Only
+      if not attempts:
+         return module_topics
+      student_answers = curr_data.loc[curr_data['result.extensions.http://id.tincanapi.com/extension/attempt-id'] == attempts[-1]].copy()
+      # Extract Response Attribute Only
+      student_answers = list(student_answers['result.response'])
+      # Compare Answers
+      result = checkCorrect(student_answers, questions[i], module)
+      if result[0]: # Correct, have to update the DB
+         conn = get_db()
+         topics = conn.execute('SELECT topic_id FROM question_topics WHERE question_id=:id', {'id': result[0]}).fetchall()
+         close_db()
+         for topic in topics:
+            module_topics[str(topic[0])]['score'] = module_topics[str(topic[0])]['score'] + 1
+   return module_topics
+
+def findQuestion(desc, module):
+   description = ""
+   number = int(re.sub("\D", "", desc))
+   if "concept" in desc:
+      description = "Concept Quiz"
+   elif "module" in desc:
+      description = "Final Quiz"
+   #FIXME: There's 2 Kinds of TYUs!!!
+   else:
+      description = "Test Your Understanding"
+   # Select the question
+   conn = get_db()
+   # Left join module_questions table with description + number parameters
+   question = conn.execute("SELECT questions.id FROM questions LEFT JOIN module_questions ON questions.id = module_questions.question_id WHERE module_id=:module AND section=:description AND section_order=:num",
+      {'module': module, 'description': description, 'num': number}).fetchone()
+   close_db()
+   return question[0]
+
+def checkCorrect(student_answers, desc, module):
    # Find question that matches descriptor
+   question_id = findQuestion(desc, module)
+   conn = get_db()
+   answers = conn.execute("SELECT answers.answer FROM answers LEFT JOIN answer_key ON answers.id = answer_key.correct_id WHERE answer_key.question_id=:question", {'question': question_id}).fetchall()
+   close_db()
    # Find answer key that matches question
+   if len(student_answers) != len(answers):
+      return [False, -1]
    # Compare lists (true / false)
-      # Compare List Size
-      # Compare Answer Slugs
-   return True
+      for curr in range(0, len(student_answers)):
+         currCorrect = False
+         # Iterate Through Strings
+         for search in range(0, len(answers)):
+            i = 0
+            j = 0
+            while i < len(student_answers[curr]) and j < len(answers[search][0]):
+               if student_answers[curr][i].lower() == answers[search][0][j].lower():
+                  i = i + 1
+                  j = j + 1
+               else:
+                  j = j + 1
+            # While Loop Finished
+            if i >= len(student_answers[curr]):
+               currCorrect = True
+               break
+         if not currCorrect: # Check if broken or ended
+            return [False, -1]
+   return [True, question_id]
 
 def parse_lrs(module, actor="any"): # Parses out the LRS
    # Open and Parse LRS JSON
@@ -176,7 +241,7 @@ def topicAnalysis(lrs, module, actor="any"): # Create Topics Aggregate
    conn = get_db()
    module_topics = {}
    topics = conn.execute('SELECT question_topics.topic_id FROM question_topics LEFT JOIN module_questions ON question_topics.question_id = module_questions.question_id WHERE module_id=:module', {'module':module}).fetchall()
-   questions = conn.execute('SELECT * FROM module_questions WHERE module_id:=module', {'module': module}).fetchall()
+   questions = conn.execute('SELECT * FROM module_questions WHERE module_id=:module', {'module': module}).fetchall()
    close_db()
    # Aggregate a List of All Topics for a Module
    for topic in topics:
@@ -185,29 +250,31 @@ def topicAnalysis(lrs, module, actor="any"): # Create Topics Aggregate
       else:
          module_topics[str(topic[0])]['max'] = module_topics[str(topic[0])]['max'] + 1
    # Get all responses to a specific module
-   temp = lrs.loc[(lrs['verb.display.en-US'] == "answered") ].copy()
+   temp = lrs.loc[(lrs['verb.display.en-US'] == "answered")].copy()
    temp_desc = temp['object.definition.description.en-US'].unique()
+
+   # Instructor View: Multiply by number of students to get an overall
+   if actor == "any":
+      num_students = len(temp['actor.mbox'].unique())
+      for key in module_topics.keys():
+         # Number of Questions in a Topic * Number of Students
+         module_topics[str(key)]['max'] = module_topics[str(topic[0])]['max'] * num_students
    # For each question, check the last attempt only
       # Get a list of each student, filter out only the last response
-   if actor == "any":
       students = temp['actor.mbox'].unique()
-      for x in range(0, temp_desc.size):
-         # Find responses related to current question
-         dataframe = temp.loc[(temp['object.definition.description.en-US'] == temp_desc[x])].copy()
-         for student in students:
-            # Filter responses for a student
-            dataframe = dataframe.loc[dataframe['actor.mbox'] == student].copy()
-            responses = dataframe['result.extensions.http://id.tincanapi.com/extension/attempt-id'].unique()
-            responses = responses.loc[responses['result.extensions.http://id.tincanapi.com/extension/attempt-id'] == attempts[-1]].copy()
-            student_responses = list(responses['result.response'])
-   # Check against key if its close to answer
-            if check_correct(student_responses, temp_desc[x]):
-               question_topics = []
-   # Add to topic based on what topics correlate (need to get the title similar enough)
-            for topic in question_topics:
-               # FIXME: Works for individual, but not for aggregate...
-               module_topics[str(topic)]['score'] = module_topics[str(topic)]['score'] + 1
-   return None
+      for i in range(0, len(students)):
+         module_topics = studentFilter(temp, temp_desc, module_topics, module, students[i])
+      pass
+   # Student Objective Check
+   else:
+      module_topics = studentFilter(temp, temp_desc, module_topics, module, actor)
+   objectives = {}
+   for i in module_topics.keys():
+      objectives[str(def_topics[i])] = (module_topics[i]['score'] / module_topics[i]['max']) * 100
+   objectives = pd.DataFrame.from_dict(objectives, orient='index', columns=['Percent'])
+   fig = px.bar(objectives, orientation='h', color=objectives.index)
+   fig.update_layout(xaxis_title="Success Rate", yaxis_title="Objective", title="Learning Objective Performance")
+   return dcc.Graph(figure=fig)
 
 def createAverages(lrs, module, actor="any"): # Create End Averages
    figures = []
@@ -216,11 +283,8 @@ def createAverages(lrs, module, actor="any"): # Create End Averages
    temp_desc = temp['object.definition.description.en-US'].unique()
    question_avgs =  pd.DataFrame(columns = ['desc', 'seconds', 'raw score', 'scaled score'])
    for x in range(0, temp_desc.size):
-      f = open("frame-" + str(x) + ".txt", "a+")
       dataframe = temp.loc[(temp['object.definition.description.en-US'] == temp_desc[x])].copy()
       dataframe = dataframe.sort_values(by=['result.response'])
-      f.write(dataframe.to_string())
-      f.close()
       question_avgs.append({
          'desc': temp_desc[x],
          'seconds': dataframe['result.duration.seconds'].mean(),
