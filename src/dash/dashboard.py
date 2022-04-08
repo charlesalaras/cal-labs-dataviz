@@ -40,18 +40,27 @@ def init_callbacks(app):
            return html.Div("No module selected!")
        questions = create_questions(module)
        lrs = parse_lrs(module)
+       # IF Instructor Mode: DO THIS
        fig_objects = create_questionGraphs(lrs, module)
-       content = [html.Div(className='twelve columns', children=unique_actors(lrs, module))]
-       content.append(html.Div(className='twelve columns', children=topicAnalysis(lrs, module)))
-       j = 0
+       content = [html.Div(className='twelve columns', children=topicAnalysis(lrs, module))]
+       content.append(html.Div(className='twelve columns', children=unique_actors(lrs, module)))
+       # ELSE: Student Mode DO THIS
+       """
+       fig_objects = create_questionGraphs(lrs, module, actor)
+       content = [html.Div(className='twelve columns', children=topicAnalysis(lrs, module, actor)))]
+       """
+       j = 0 # Question Counter Variable
        for i in fig_objects.keys():
+          q_id = findQuestion(i, module) # Find the question needed
+
           content.append(html.Div(className='twelve columns', children=dcc.Tabs(children=[
-              dcc.Tab(label='Question', children=questions[j]),
+              dcc.Tab(label='Question', children=questions[str(q_id)]),
               dcc.Tab(label='Responses', children=fig_objects[i][0]),
               dcc.Tab(label='Score Statistics', children=fig_objects[i][1]),
               dcc.Tab(label='Average Statistics', children=fig_objects[i][2])
                       ])))
           j = j + 1
+       # FIXME: Averages don't work!
        """
        averages = createAverages(lrs, module)
        content.append(html.Div(className='twelve columns', children=dcc.Tabs(className='twelve columns', children=[

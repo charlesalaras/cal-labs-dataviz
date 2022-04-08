@@ -24,7 +24,7 @@ def build_question(qid, slug, answers, correct, images, topics, section, number)
    return build;
 
 def create_questions(value):
-   questions = []
+   questions = {}
    # DATABASE REQUEST: Grab Questions Specific to Module
    conn = get_db()
    module_questions = conn.execute("SELECT question_id, section, section_order FROM module_questions WHERE module_id=:module", {'module': value}).fetchall()
@@ -121,7 +121,7 @@ def create_questions(value):
                children=str(element)
            ))
        currQuestion.append(html.Ul(concepts))
-       questions.append(currQuestion)
+       questions[str(q['id'])] = currQuestion
        f.close()
    return questions
 

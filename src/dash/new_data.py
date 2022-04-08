@@ -22,8 +22,8 @@ def studentFilter(lrs_copy, questions, module_topics, module, student):
       # Get List of attempts
       attempts = list(curr_data['result.extensions.http://id.tincanapi.com/extension/attempt-id'].unique())
       # Get Last Attempt Only
-      if not attempts:
-         return module_topics
+      if not attempts: # User didn't complete the question
+         continue
       student_answers = curr_data.loc[curr_data['result.extensions.http://id.tincanapi.com/extension/attempt-id'] == attempts[-1]].copy()
       # Extract Response Attribute Only
       student_answers = list(student_answers['result.response'])
@@ -31,10 +31,14 @@ def studentFilter(lrs_copy, questions, module_topics, module, student):
       result = checkCorrect(student_answers, questions[i], module)
       if result[0]: # Correct, have to update the DB
          conn = get_db()
-         topics = conn.execute('SELECT topic_id FROM question_topics WHERE question_id=:id', {'id': result[0]}).fetchall()
+         topics = conn.execute('SELECT topic_id FROM question_topics WHERE question_id=:id', {'id': result[1]}).fetchall()
          close_db()
-         for topic in topics:
-            module_topics[str(topic[0])]['score'] = module_topics[str(topic[0])]['score'] + 1
+         for topic in topics: # Increment a Student's Score
+            module_topics[str(topic[0])]['scores'] = module_topics[str(topic[0])]['scores'] + 1
+      # Add to the average, and reset the score for the next student
+   for key in module_topics.keys():
+      module_topics[key]['averages'] = module_topics[key]['averages'] + (module_topics[key]['scores'] / module_topics[key]['max'])
+      module_topics[key]['scores'] = 0
    return module_topics
 
 def findQuestion(desc, module):
@@ -240,13 +244,12 @@ def create_questionGraphs(lrs, module, actor="any"): # Create Question Figures
 def topicAnalysis(lrs, module, actor="any"): # Create Topics Aggregate
    conn = get_db()
    module_topics = {}
-   topics = conn.execute('SELECT question_topics.topic_id FROM question_topics LEFT JOIN module_questions ON question_topics.question_id = module_questions.question_id WHERE module_id=:module', {'module':module}).fetchall()
-   questions = conn.execute('SELECT * FROM module_questions WHERE module_id=:module', {'module': module}).fetchall()
+   topics = conn.execute('SELECT topic_id FROM question_topics LEFT JOIN module_questions ON question_topics.question_id=module_questions.question_id WHERE module_id=:module', {'module': module}).fetchall()
    close_db()
    # Aggregate a List of All Topics for a Module
    for topic in topics:
       if str(topic[0]) not in module_topics.keys():
-         module_topics[str(topic[0])] = { 'max': 1, 'score': 0 }
+         module_topics[str(topic[0])] = { 'max': 1, 'scores': 0,'averages': 0 }
       else:
          module_topics[str(topic[0])]['max'] = module_topics[str(topic[0])]['max'] + 1
    # Get all responses to a specific module
@@ -255,10 +258,7 @@ def topicAnalysis(lrs, module, actor="any"): # Create Topics Aggregate
 
    # Instructor View: Multiply by number of students to get an overall
    if actor == "any":
-      num_students = len(temp['actor.mbox'].unique())
-      for key in module_topics.keys():
-         # Number of Questions in a Topic * Number of Students
-         module_topics[str(key)]['max'] = module_topics[str(topic[0])]['max'] * num_students
+      num_students = temp['actor.name'].nunique()
    # For each question, check the last attempt only
       # Get a list of each student, filter out only the last response
       students = temp['actor.mbox'].unique()
@@ -267,15 +267,20 @@ def topicAnalysis(lrs, module, actor="any"): # Create Topics Aggregate
       pass
    # Student Objective Check
    else:
+      num_students = 1
       module_topics = studentFilter(temp, temp_desc, module_topics, module, actor)
+      f = open("topics.txt", "a+")
+      f.write(str(module_topics))
+      f.close()
    objectives = {}
    for i in module_topics.keys():
-      objectives[str(def_topics[i])] = (module_topics[i]['score'] / module_topics[i]['max']) * 100
+      objectives[str(def_topics[i])] = (module_topics[i]['averages'] / num_students) * 100
    objectives = pd.DataFrame.from_dict(objectives, orient='index', columns=['Percent'])
    fig = px.bar(objectives, orientation='h', color=objectives.index)
    fig.update_layout(xaxis_title="Success Rate", yaxis_title="Objective", title="Learning Objective Performance")
    return dcc.Graph(figure=fig)
 
+#FIXME: Does not work??
 def createAverages(lrs, module, actor="any"): # Create End Averages
    figures = []
 
