@@ -277,31 +277,37 @@ def topicAnalysis(lrs, module, actor="any"): # Create Topics Aggregate
       objectives[str(def_topics[i])] = (module_topics[i]['averages'] / num_students) * 100
    objectives = pd.DataFrame.from_dict(objectives, orient='index', columns=['Percent'])
    fig = px.bar(objectives, orientation='h', color=objectives.index)
-   fig.update_layout(xaxis_title="Success Rate", yaxis_title="Objective", title="Learning Objective Performance")
+   fig.update_layout(xaxis_title="Success Rate", yaxis_title="Topic", title="Topic Performance")
    return dcc.Graph(figure=fig)
 
 #FIXME: Does not work??
 def createAverages(lrs, module, actor="any"): # Create End Averages
    figures = []
-
+   f = open("avg.log", "w")
    temp = lrs.loc[(lrs['verb.display.en-US'] == "answered") ].copy()
    temp_desc = temp['object.definition.description.en-US'].unique()
-   question_avgs =  pd.DataFrame(columns = ['desc', 'seconds', 'raw score', 'scaled score'])
+   question_avgs =  pd.DataFrame(columns = ['question', 'desc', 'seconds', 'raw score', 'scaled score'])
    for x in range(0, temp_desc.size):
       dataframe = temp.loc[(temp['object.definition.description.en-US'] == temp_desc[x])].copy()
       dataframe = dataframe.sort_values(by=['result.response'])
-      question_avgs.append({
-         'desc': temp_desc[x],
-         'seconds': dataframe['result.duration.seconds'].mean(),
-         'raw score': math.ceil(dataframe['result.score.raw'].mean()),
-         'scaled score': dataframe['result.score.scaled'].mean()
-         }, ignore_index=True)
+      curr = pd.DataFrame([[x, 
+         temp_desc[x], 
+         dataframe['result.duration.seconds'].mean(),
+         math.ceil(dataframe['result.score.raw'].mean()),
+         dataframe['result.score.scaled'].mean()]], 
+         columns=['question', 'desc', 'seconds', 'raw score', 'scaled score'])
+      question_avgs = question_avgs.append(curr, ignore_index=True)
+      f.write("Question " + str(x) + " Seconds: " + str(dataframe['result.duration.seconds'].mean()) + "\n")
+      f.write("Question " + str(x) + " Raw Score: " + str(dataframe['result.score.raw'].mean()) + "\n")
+      f.write("Question " + str(x) + " Scaled Score: " + str(dataframe['result.score.scaled'].mean()) + "\n")
+   f.write(question_avgs.to_string())
+   f.close()
    # Average Seconds in Module
-   fig = px.line(question_avgs, x = 'desc' , y = 'seconds', markers=True, title="Seconds Per Question")
+   fig = px.line(question_avgs, x = 'question' , y = 'seconds', markers=True, title="Seconds Per Question")
    figures.append(dcc.Graph(figure=fig))
    # Average Raw Score in Module
-   fig = px.line(question_avgs, x = 'desc' , y = 'raw score',  title="Raw Score Per Question", markers=True)
+   fig = px.line(question_avgs, x = 'question' , y = 'raw score',  title="Raw Score Per Question", markers=True)
    figures.append(dcc.Graph(figure=fig))
-   fig = px.line(question_avgs, x = 'desc' , y = 'scaled score', title="Scaled Score Per Question", markers=True)
+   fig = px.line(question_avgs, x = 'question' , y = 'scaled score', title="Scaled Score Per Question", markers=True)
    figures.append(dcc.Graph(figure=fig))
    return figures

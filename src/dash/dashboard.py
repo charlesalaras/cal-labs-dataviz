@@ -43,6 +43,14 @@ def init_callbacks(app):
        # IF Instructor Mode: DO THIS
        fig_objects = create_questionGraphs(lrs, module)
        content = [html.Div(className='twelve columns', children=topicAnalysis(lrs, module))]
+
+       averages = createAverages(lrs, module)
+       content.append(html.Div(className='twelve columns', children=dcc.Tabs(className='twelve columns', children=[
+           dcc.Tab(label='Average Time', children=averages[0]),
+           dcc.Tab(label='Average Score per Question', children=averages[1]),
+           dcc.Tab(label='Average Overall Score', children=averages[2])
+           ])))
+
        content.append(html.Div(className='twelve columns', children=unique_actors(lrs, module)))
        # ELSE: Student Mode DO THIS
        """
@@ -60,70 +68,4 @@ def init_callbacks(app):
               dcc.Tab(label='Average Statistics', children=fig_objects[i][2])
                       ])))
           j = j + 1
-       # FIXME: Averages don't work!
-       """
-       averages = createAverages(lrs, module)
-       content.append(html.Div(className='twelve columns', children=dcc.Tabs(className='twelve columns', children=[
-           dcc.Tab(label='Average Time', children=averages[0]),
-           dcc.Tab(label='Average Score per Question', children=averages[1]),
-           dcc.Tab(label='Average Overall Score', children=averages[2])
-           ])))
-       """
        return content
-   @app.callback(Output('student-container', 'children'),
-      Input('student-figure', 'value'), Input('student-email', 'value'))
-   def studentgraphs(value, email):
-        if(email == '' or '@' not in email):
-            fig_objects = []
-        else:
-            fig_objects = create_data(value, 'mailto:' + email)
-        questions = create_questions(value)
-        graphs = []
-        j = 0
-        for i in range(0, len(fig_objects)):
-            columnSpacing = 'six columns'
-            if i == 0:
-                columnSpacing = 'twelve columns'
-            # Add Relevant Question
-            if i % 3 == 1 and j < len(questions):
-                graphs.append(html.Div(
-                    className=(columnSpacing + ' fig'),
-                    id='question-{}'.format(j),
-                    children=questions[j]
-                ))
-                j = j + 1
-            # Add Relevant Graph
-            graphs.append(dcc.Graph(
-                className=(columnSpacing + ' fig'),
-                id='graph-{}'.format(i),
-                figure=fig_objects[i]
-            ))
-        return html.Div(graphs)
-   @app.callback(Output('instructor-container', 'children'),
-      Input('figure-list', 'value'))
-   def addinggraphsfromlist(value):
-      fig_objects = create_data(value)
-      #questions = create_questions(value)
-      graphs = []
-      j = 0
-      for i in range(0,len(fig_objects)):
-         columnSpacing = 'six columns'
-         if i == 0:
-             columnSpacing = 'twelve columns'
-         if i > 0 and i < 6:
-             columnSpacing = 'twelve columns'
-         # Add Relevant Question
-         if i % 3 == 0 and i > 5:
-            graphs.append(html.Div(
-                className=(columnSpacing + ' fig'),
-                id='question-{}'.format(i),
-                children=html.H1("Question Goes Here")
-            ))
-            j = j + 1
-         # Add Relevant Graph
-         graphs.append(dcc.Graph(
-            className=(columnSpacing + ' fig'),
-            id='graph-{}'.format(i),
-            figure= fig_objects[i]
-         ))
-      return html.Div(graphs)
