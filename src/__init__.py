@@ -1,7 +1,7 @@
 from flask import Flask
 
 def init_app():
-   app = Flask(__name__)
+   app = Flask(__name__, static_url_path='')
 
    with app.app_context():
       # Import parts of our core Flask app
