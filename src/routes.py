@@ -34,7 +34,7 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 
 # OAuth 2 client setup
-client = WebApplicationClient(GOOGLE_CLIENT_ID) 
+client = WebApplicationClient(GOOGLE_CLIENT_ID)
 
 # Flask-Login helper to retrieve a user from our db
 @login_manager.user_loader
@@ -47,6 +47,14 @@ def get_google_provider_cfg():
 @app.route("/")
 def index():
     if current_user.is_authenticated:
+        return redirect(url_for("dashboard"))
+    else:
+        return render_template("index.html")
+        #'<a class="button" href="/login">Google Login</a>'
+
+@app.route("/dashapp/")
+def dashboard():
+    if current_user.is_authenticated:
         return (
             "<p>Hello, {}! You're logged in! Email: {}</p>"
             "<div><p>Google Profile Picture:</p>"
@@ -56,9 +64,9 @@ def index():
             )
         )
     else:
-        return render_template("index.html")
+        return redirect(url_for("login"))
+    pass
         #'<a class="button" href="/login">Google Login</a>'
-
 
 @app.route("/login")
 def login():
@@ -142,14 +150,14 @@ def logout():
     logout_user()
     return redirect(url_for("index"))
 
-    
+
 
 
 '''
 @app.route('/')
 def home():
     if current_user.is_authenticated:
-        
+
 
 @app.route('/login')
 def login():

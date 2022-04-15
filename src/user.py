@@ -1,6 +1,6 @@
 from flask_login import UserMixin
 
-from src.db import get_db
+from src.db import get_db, close_db
 
 class User(UserMixin):
     def __init__(self, id_, name, email, profile_pic):
@@ -8,13 +8,13 @@ class User(UserMixin):
         self.name = name
         self.email = email
         self.profile_pic = profile_pic
-
     @staticmethod
-    def get(user_id):
+    def get(user_id): # FIXME: Replace with better functionality...
         db = get_db()
         user = db.execute(
             "SELECT * FROM user WHERE id = ?", (user_id,)
         ).fetchone()
+        close_db()
         if not user:
             return None
 
@@ -24,7 +24,7 @@ class User(UserMixin):
         return user
 
     @staticmethod
-    def create(id_, name, email, profile_pic):
+    def create(id_, name, email, profile_pic): # FIXME: We shouldn't be storing values at all...
         db = get_db()
         db.execute(
             "INSERT INTO user (id, name, email, profile_pic) "
@@ -32,3 +32,4 @@ class User(UserMixin):
             (id_, name, email, profile_pic),
         )
         db.commit()
+        close_db()
