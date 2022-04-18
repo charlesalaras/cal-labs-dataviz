@@ -50,7 +50,12 @@ def init_callbacks(app):
                  Input('url', 'pathname'))
    def render_info(pathname):
        if pathname == '/dashapp/' and current_user.is_authenticated:
-           return [html.Img(src=str(current_user.profile_pic)), html.H3(str(current_user.name)), html.P(str(current_user.email))]
+           content = [html.Img(src=str(current_user.profile_pic)), html.H3(str(current_user.name)), html.P(str(current_user.email))]
+           if str(current_user.email) in ADMINS:
+               content.append(html.Div(className="admin", children="Instructor"))
+           else:
+               content.append(html.Div(className="student", children="Student"))
+           return content
        else: # How did you get here?!
            return "NOT LOGGED IN"
    @app.callback(Output('topics-content', 'children'),
