@@ -192,6 +192,10 @@ img {
   top: 50%;
   float: inline-end;
 }
+#auth-user-info img {
+  float: none;
+  top: auto;
+}
 
 /* Links
 –––––––––––––––––––––––––––––––––––––––––––––––––– */
