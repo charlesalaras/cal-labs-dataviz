@@ -10,6 +10,7 @@ from .data import create_data
 from .question import create_questions
 from .layout import create_layout
 from .new_data import *
+from .admin import ADMINS
 
 from flask_login import (
     LoginManager,
@@ -65,22 +66,22 @@ def init_callbacks(app):
            questions = create_questions(module)
            lrs = parse_lrs(module)
            # IF Instructor Mode: DO THIS
-           fig_objects = create_questionGraphs(lrs, module)
-           content = [html.Div(className='twelve columns', children=topicAnalysis(lrs, module))]
+           if str(current_user.email) in ADMINS:
+               fig_objects = create_questionGraphs(lrs, module)
+               content = [html.Div(className='twelve columns', children=topicAnalysis(lrs, module))]
 
-           averages = createAverages(lrs, module)
-           content.append(html.Div(className='twelve columns', children=dcc.Tabs(className='twelve columns', children=[
-               dcc.Tab(label='Average Time', children=averages[0]),
-               dcc.Tab(label='Average Score per Question', children=averages[1]),
-               dcc.Tab(label='Average Overall Score', children=averages[2])
-           ])))
+               averages = createAverages(lrs, module)
+               content.append(html.Div(className='twelve columns', children=dcc.Tabs(className='twelve columns', children=[
+                   dcc.Tab(label='Average Time', children=averages[0]),
+                   dcc.Tab(label='Average Score per Question', children=averages[1]),
+                   dcc.Tab(label='Average Overall Score', children=averages[2])])))
 
-           content.append(html.Div(className='twelve columns', children=unique_actors(lrs, module)))
+               content.append(html.Div(className='twelve columns', children=unique_actors(lrs, module)))
            # ELSE: Student Mode DO THIS
-           """
-           fig_objects = create_questionGraphs(lrs, module, actor)
-           content = [html.Div(className='twelve columns', children=topicAnalysis(lrs, module, actor)))]
-           """
+           else:
+               fig_objects = create_questionGraphs(lrs, module, "mailto:" + str(current_user.email))
+               content = [html.Div(className='twelve columns', children=topicAnalysis(lrs, module, "mailto:" + str(current_user.email)))]
+
            j = 0 # Question Counter Variable
            for i in fig_objects.keys():
               q_id = findQuestion(i, module) # Find the question needed
