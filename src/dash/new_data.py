@@ -185,7 +185,7 @@ def response_table(lrs):
    data = lrs.sort_values(by=['result.extensions.http://id.tincanapi.com/extension/attempt-id'])
    fig = go.Figure(data=[go.Table(
       header=dict(values=['Attempt Number', 'Response', 'Duration'], align='center'),
-      cells=dict(values=[temp['result.extensions.http://id.tincanapi.com/extension/attempt-id'], temp['result.response'], temp['result.duration.seconds']], align='center'))
+      cells=dict(values=[data['result.extensions.http://id.tincanapi.com/extension/attempt-id'], data['result.response'], data['result.duration.seconds']], align='center'))
    ])
    return fig
 

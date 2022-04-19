@@ -44,6 +44,10 @@ def create_layout():
             id='page',
             children=[
                 dcc.Location(id='url', refresh=True),
+                html.Div(
+                    className='logout',
+                    children=html.A(href="/logout", children="Logout")
+                ),
                 html.H1(
                     children='California Learning Lab Data Analysis',
                     style={ 'textAlign': 'center' }

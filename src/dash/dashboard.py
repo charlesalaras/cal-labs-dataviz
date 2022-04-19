@@ -69,9 +69,9 @@ def init_callbacks(app):
            return html.Div("No module selected!")
        if current_user.is_authenticated:
            questions = create_questions(module)
-           lrs = parse_lrs(module)
            # IF Instructor Mode: DO THIS
            if str(current_user.email) in ADMINS:
+               lrs = parse_lrs(module)
                fig_objects = create_questionGraphs(lrs, module)
                content = [html.Div(className='twelve columns', children=topicAnalysis(lrs, module))]
 
@@ -84,6 +84,7 @@ def init_callbacks(app):
                content.append(html.Div(className='twelve columns', children=unique_actors(lrs, module)))
            # ELSE: Student Mode DO THIS
            else:
+               lrs = parse_lrs(module, "mailto:" + str(current_user.email))
                fig_objects = create_questionGraphs(lrs, module, "mailto:" + str(current_user.email))
                content = [html.Div(className='twelve columns', children=topicAnalysis(lrs, module, "mailto:" + str(current_user.email)))]
 
