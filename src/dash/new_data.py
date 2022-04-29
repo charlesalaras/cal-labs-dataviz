@@ -12,6 +12,7 @@ from types import SimpleNamespace
 sys.path.append('../src')
 from src.db import get_db, close_db
 from src.dash.topics import topics as def_topics
+from src.__init__ import mongo
 
 def studentFilter(lrs_copy, questions, module_topics, module, student):
    # Filter By Student
@@ -91,11 +92,10 @@ def checkCorrect(student_answers, desc, module):
 
 def parse_lrs(module, actor="any"): # Parses out the LRS
    # Open and Parse LRS JSON
-   with open('ucrstaticsw22.json') as json_file:
-      xapiData = json.load(json_file)
+   # with open('ucrstaticsw22.json') as json_file:
+   #    xapiData = json.load(json_file)
 
-   lrs = json_normalize(xapiData)
-
+   # lrs = json_normalize(xapiData)
    # Stores Course Link
    del lrs['object.id']
    # Stores 'Activity'
@@ -116,39 +116,36 @@ def parse_lrs(module, actor="any"): # Parses out the LRS
    # del lrs['actor.mbox']
    # Stores Minimum Possible Score (If Available)
    del lrs['result.score.min']
-   conn = get_db()
-   module = conn.execute('SELECT name FROM modules WHERE id=:module', {'module': module}).fetchone()
-   close_db()
-   temp = lrs.loc[lrs['object.definition.name.en-US'] == str(module[0])].copy()
-   # FIXME: If Actor is Instructor, Skip this Step
-   if actor != "any":
-      temp = temp.loc[temp['actor.mbox'] == actor].copy()
+   #conn = get_db()
+   #module = conn.execute('SELECT name FROM modules WHERE id=:module', {'module': module}).fetchone()
+   #close_db()
+   if actor != any:
+      lrs = mongo.db.lrs.find({"object.definition.en-US": str(module), "actor.mbox": actor})
+   else:
+      lrs = mongo.db.lrs.find({"object.definition.en-US": str(module)})
 
    # ISO8601 Parser (Maybe a Library that Does this?)
-   for x in temp.index:
+   for x in lrs["result.duration"]:
        # Parse Hours
-       if 'H' in temp.at[x, 'result.duration']:
-           time_string = temp.at [x, 'result.duration']
-           temp.at[x, 'result.duration'] = pd.to_datetime(temp.at[x, 'result.duration'], format='PT%HH%MM%SS').time()
+       if 'H' in lrs['result.duration']:
+           time_string = lrs['result.duration']
+           lrs['result.duration'] = pd.to_datetime(lrs['result.duration'], format='PT%HH%MM%SS').time()
        # Parse Minutes
-       elif 'M' in temp.at[x, 'result.duration']:
-           time_string = temp.at [x, 'result.duration']
-           temp.at[x, 'result.duration'] = pd.to_datetime(temp.at[x, 'result.duration'], format='PT%MM%SS').time()
+       elif 'M' in lrs['result.duration']:
+           time_string = lrs['result.duration']
+           lrs['result.duration'] = pd.to_datetime(lrs['result.duration'], format='PT%MM%SS').time()
        # Parse Seconds
        else:
-           time_string = temp.at [x, 'result.duration']
-           temp.at[x, 'result.duration'] = pd.to_datetime(temp.at[x, 'result.duration'], format='PT%SS').time()
-   lrs = temp.copy()
+           time_string = lrs['result.duration']
+           lrs['result.duration'] = pd.to_datetime(lrs['result.duration'], format='PT%SS').time()
 
    # %%
    # create time delta from datetime.time objects
    lrs['result.duration.seconds'] = 'NaN'
 
-   temp = lrs.copy()
-   for x in temp.index:
-       time_string = temp.at [x, 'result.duration']
-       temp.at[x, 'result.duration.seconds'] = pd.to_timedelta(time_string.strftime( format="%H:%M:%S")).total_seconds()
-   lrs = temp.copy()
+   for x in lrs["result.duration"]:
+       time_string = lrs['result.duration']
+       lrs['result.duration.seconds'] = pd.to_timedelta(time_string.strftime( format="%H:%M:%S")).total_seconds()
 
    return lrs
 
@@ -162,12 +159,12 @@ def unique_actors(lrs, module): # For Instructor Only: Get Unique Actors for Mod
 
    fig.add_trace(go.Indicator(
        mode = 'number',
-       value = lrs['actor.name'].nunique(),
+       value = mongo.db.lrs.distinct("actor.name").count(),
        title = {'text': "unique actors"},
         domain = {'row': 0, 'column': 0}
        ))
-
-   temp = lrs.loc[lrs['verb.display.en-US'] == "exited"].copy()
+   # FIXME: How to filter correctly?
+   temp = mongo.db.lrs.find({"object.definition.name.en-US": str(module), "verb.display.en-US": "answered"})
 
    fig.add_trace(go.Indicator(
        mode = 'number',
@@ -181,8 +178,8 @@ def unique_actors(lrs, module): # For Instructor Only: Get Unique Actors for Mod
        grid = {'rows': 2, 'columns': 2})
    return dcc.Graph(figure=fig)
 
-def response_table(lrs):
-   data = lrs.sort_values(by=['result.extensions.http://id.tincanapi.com/extension/attempt-id'])
+def response_table(lrs, actor):
+   data = mongo.db.lrs.find({"verb.display.en-US": "answered", "actor.mbox": str(actor)}).sort()
    fig = go.Figure(data=[go.Table(
       header=dict(values=['Attempt Number', 'Response', 'Duration'], align='center'),
       cells=dict(values=[data['result.extensions.http://id.tincanapi.com/extension/attempt-id'], data['result.response'], data['result.duration.seconds']], align='center'))
