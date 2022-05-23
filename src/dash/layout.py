@@ -4,7 +4,7 @@ from dash import html
 
 import sys
 sys.path.append('../src')
-from src.db import get_db, close_db
+from src.db import get_db, close_db, db_connect, db_close
 
 colors = {
     'background': '#FFFFFF',
@@ -12,27 +12,25 @@ colors = {
 }
 
 def request_modules():
-    conn = get_db()
-    modules = conn.execute('SELECT name, id FROM modules').fetchall()
-    close_db()
+    db = db_connect()
+    modules = db.callabs.modules.find({"active": True})
     options = []
     for module in modules:
         currDict = {
-            'label': module[0],
-            'value': module[1]
+            'label': module["name"],
+            'value': module["_id"]
         }
         options.append(currDict)
+    db_close(db)
     # END OF DATABASE REQUEST
     return options
 def request_topics():
-    conn = get_db()
-    topics = conn.execute('SELECT id, title FROM topics').fetchall()
-    close_db()
+    topics = []
     options = []
     for topic in topics:
         currDict = {
-            'label': topic[1],
-            'value': topic[0]
+            'label': topic["name"],
+            'value': topic["_id"]
         }
         options.append(currDict)
     # END OF DATABASE REQUEST

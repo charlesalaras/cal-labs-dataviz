@@ -4,10 +4,17 @@ import click
 from flask import current_app, g
 from flask.cli import with_appcontext
 from dotenv import load_dotenv
+from pymongo import MongoClient
 
 load_dotenv()
 
 DATABASE = os.getenv('DATABASE')
+def db_connect():
+    client = MongoClient('mongodb://localhost:27017')
+    return client
+
+def db_close(client):
+    client.close()
 
 def get_db():
    if 'db' not in g:

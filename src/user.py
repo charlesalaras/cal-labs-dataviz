@@ -10,11 +10,7 @@ class User(UserMixin):
         self.profile_pic = profile_pic
     @staticmethod
     def get(user_id): # FIXME: Replace with better functionality...
-        db = get_db()
-        user = db.execute(
-            "SELECT * FROM user WHERE id = ?", (user_id,)
-        ).fetchone()
-        close_db()
+        user = mongo.db.user.find_one({"id": user_id})
         if not user:
             return None
 
@@ -24,12 +20,11 @@ class User(UserMixin):
         return user
 
     @staticmethod
-    def create(id_, name, email, profile_pic): # FIXME: We shouldn't be storing values at all...
-        db = get_db()
-        db.execute(
-            "INSERT INTO user (id, name, email, profile_pic) "
-            "VALUES (?, ?, ?, ?)",
-            (id_, name, email, profile_pic),
-        )
-        db.commit()
-        close_db()
+    def create(id_, name, email, profile_pic):
+        user = {
+            "id": id_,
+            "name": name,
+            "email": email,
+            "profile_pic": profile_pic
+        }
+        mongo.db.user.insert(user)

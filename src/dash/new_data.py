@@ -11,9 +11,8 @@ from pandas import json_normalize
 from types import SimpleNamespace
 sys.path.append('../src')
 from src.db import get_db, close_db
+from src.db import db_connect, db_close
 from src.dash.topics import topics as def_topics
-from src.__init__ import mongo
-
 def studentFilter(lrs_copy, questions, module_topics, module, student):
    # Filter By Student
    dataframe = lrs_copy.loc[lrs_copy['actor.mbox'] == student].copy()
@@ -31,11 +30,11 @@ def studentFilter(lrs_copy, questions, module_topics, module, student):
       # Compare Answers
       result = checkCorrect(student_answers, questions[i], module)
       if result[0]: # Correct, have to update the DB
-         conn = get_db()
-         topics = conn.execute('SELECT topic_id FROM question_topics WHERE question_id=:id', {'id': result[1]}).fetchall()
-         close_db()
-         for topic in topics: # Increment a Student's Score
-            module_topics[str(topic[0])]['scores'] = module_topics[str(topic[0])]['scores'] + 1
+         db = db_connect()
+         topics = db.callabs.questions.find({"id": result[1]}, {"topics": 1})
+         db.close(db)
+         for topic in topics["topics"]: # Increment a Student's Score
+            module_topics[str(topic)]['scores'] = module_topics[str(topic)]['scores'] + 1
       # Add to the average, and reset the score for the next student
    for key in module_topics.keys():
       module_topics[key]['averages'] = module_topics[key]['averages'] + (module_topics[key]['scores'] / module_topics[key]['max'])
@@ -52,20 +51,21 @@ def findQuestion(desc, module):
    #FIXME: There's 2 Kinds of TYUs!!!
    else:
       description = "Test Your Understanding"
-   # Select the question
-   conn = get_db()
-   # Left join module_questions table with description + number parameters
-   question = conn.execute("SELECT questions.id FROM questions LEFT JOIN module_questions ON questions.id = module_questions.question_id WHERE module_id=:module AND section=:description AND section_order=:num",
-      {'module': module, 'description': description, 'num': number}).fetchone()
-   close_db()
-   return question[0]
+   # Get all question references in a module
+   db = db_connect()
+   question = db.callabs.modules.find({"name": module}, {"questions": 1})
+   questions = []
+   # Get the actual slug of each question in specificed section
+   for x in question:
+        curr = db.callabs.questions.find({"_id": x, "section": description})
+        questions.append(curr)
+   db_close(db)
+   return questions[number - 1]
 
 def checkCorrect(student_answers, desc, module):
    # Find question that matches descriptor
    question_id = findQuestion(desc, module)
-   conn = get_db()
-   answers = conn.execute("SELECT answers.answer FROM answers LEFT JOIN answer_key ON answers.id = answer_key.correct_id WHERE answer_key.question_id=:question", {'question': question_id}).fetchall()
-   close_db()
+   answers = question_id["answers"]
    # Find answer key that matches question
    if len(student_answers) != len(answers):
       return [False, -1]
@@ -119,11 +119,12 @@ def parse_lrs(module, actor="any"): # Parses out the LRS
    #conn = get_db()
    #module = conn.execute('SELECT name FROM modules WHERE id=:module', {'module': module}).fetchone()
    #close_db()
+   db = db_connect()
    if actor != any:
-      lrs = mongo.db.lrs.find({"object.definition.en-US": str(module), "actor.mbox": actor})
+      lrs = db.callabs.lrs.find({"object.definition.en-US": str(module), "actor.mbox": actor})
    else:
-      lrs = mongo.db.lrs.find({"object.definition.en-US": str(module)})
-
+      lrs = db.callabs.lrs.find({"object.definition.en-US": str(module)})
+   db_close(db)
    # ISO8601 Parser (Maybe a Library that Does this?)
    for x in lrs["result.duration"]:
        # Parse Hours
@@ -154,17 +155,20 @@ def unique_actors(lrs, module): # For Instructor Only: Get Unique Actors for Mod
    # conn = get_db()
    # module = conn.execute('SELECT name FROM modules WHERE id=:module', {'module': module}).fetchone()
    # close_db()
-
+   db = db_connect()
+   module = db.callabs.modules.find_one({"_id": module})
    fig = go.Figure()
 
    fig.add_trace(go.Indicator(
        mode = 'number',
-       value = mongo.db.lrs.distinct("actor.name").count(),
+       value = db.callabs.lrs.distinct("actor.name").length,
        title = {'text': "unique actors"},
         domain = {'row': 0, 'column': 0}
        ))
    # FIXME: How to filter correctly?
-   temp = mongo.db.lrs.find({"object.definition.name.en-US": str(module), "verb.display.en-US": "answered"})
+   temp = db.callabs.lrs.find({"object.definition.name.en-US": str(module), "verb.display.en-US": "answered"})
+
+   db.close(db)
 
    fig.add_trace(go.Indicator(
        mode = 'number',
@@ -179,7 +183,10 @@ def unique_actors(lrs, module): # For Instructor Only: Get Unique Actors for Mod
    return dcc.Graph(figure=fig)
 
 def response_table(lrs, actor):
-   data = mongo.db.lrs.find({"verb.display.en-US": "answered", "actor.mbox": str(actor)}).sort()
+   # FIXME: Only for specific question!
+   db = db_connect()
+   data = db.callabs.lrs.find({"verb.display.en-US": "answered", "actor.mbox": str(actor)}).sort()
+   db_close(db)
    fig = go.Figure(data=[go.Table(
       header=dict(values=['Attempt Number', 'Response', 'Duration'], align='center'),
       cells=dict(values=[data['result.extensions.http://id.tincanapi.com/extension/attempt-id'], data['result.response'], data['result.duration.seconds']], align='center'))
@@ -188,14 +195,15 @@ def response_table(lrs, actor):
 
 def create_questionGraphs(lrs, module, actor="any"): # Create Question Figures
    # Filter into "answered" statements + Create an Index
-   temp = lrs.loc[(lrs['verb.display.en-US'] == "answered") ].copy()
-   temp_desc = temp['object.definition.description.en-US'].unique()
+   db = db_connect()
+   descriptions = db.callabs.lrs.distinct("object.definition.description.en-US", {"object.definition.name.en-US": str(module)})
 
    figures = {}
-   for x in range(0, temp_desc.size):
+   for x in range(0, descriptions.size):
       currSet = []
-      question_data = temp.loc[(temp['object.definition.description.en-US'] == temp_desc[x])].copy()
-      question_data = question_data.sort_values(by=['result.response'])
+      question_data = db.callabs.lrs.find({"object.definition.description.en-US": str(description)})
+      db_close(db)
+      #question_data = question_data.sort_values(by=['result.response'])
       # Create Histogram Plot / Response Table
       if actor != "any":
          currSet.append(dcc.Graph(figure=response_table(question_data)))
@@ -209,6 +217,7 @@ def create_questionGraphs(lrs, module, actor="any"): # Create Question Figures
       # Question Averages
       curr = go.Figure()
       # Average Raw Score
+      # FIXME: Must reformat time deltas
       curr.add_trace(go.Indicator(
          mode = 'number',
          number = {'suffix': ' points'},
@@ -217,6 +226,7 @@ def create_questionGraphs(lrs, module, actor="any"): # Create Question Figures
          domain = {'x': [0, 0.5], 'y': [0, 0.5]}
          ))
       # Average Scaled Score
+      # FIXME: Must reformat time deltas
       curr.add_trace(go.Indicator(
          mode = 'number',
          number = {'suffix': ' points'},
@@ -225,6 +235,7 @@ def create_questionGraphs(lrs, module, actor="any"): # Create Question Figures
          domain = {'x': [0, 0.5], 'y': [0.5, 1]}
          ))
       # Average Time on Each Response
+      # FIXME: Must reformat time deltas
       curr.add_trace(go.Indicator(
          mode = 'number', number = {'suffix': ' mins'},
          value = question_data['result.duration.seconds'].mean() / 60,
@@ -234,7 +245,7 @@ def create_questionGraphs(lrs, module, actor="any"): # Create Question Figures
       curr.update_layout(grid = {'rows': 3, 'columns': 2})
       currSet.append(dcc.Graph(figure=curr))
       # Append all figures relating to the question
-      figures[str(temp_desc[x])] = currSet
+      figures[str(descriptions[x])] = currSet
    # Make all Question Graphs
    return figures
 
@@ -287,11 +298,11 @@ def createAverages(lrs, module, actor="any"): # Create End Averages
    for x in range(0, temp_desc.size):
       dataframe = temp.loc[(temp['object.definition.description.en-US'] == temp_desc[x])].copy()
       dataframe = dataframe.sort_values(by=['result.response'])
-      curr = pd.DataFrame([[x, 
-         temp_desc[x], 
+      curr = pd.DataFrame([[x,
+         temp_desc[x],
          dataframe['result.duration.seconds'].mean(),
          math.ceil(dataframe['result.score.raw'].mean()),
-         dataframe['result.score.scaled'].mean()]], 
+         dataframe['result.score.scaled'].mean()]],
          columns=['question', 'desc', 'seconds', 'raw score', 'scaled score'])
       question_avgs = question_avgs.append(curr, ignore_index=True)
       f.write("Question " + str(x) + " Seconds: " + str(dataframe['result.duration.seconds'].mean()) + "\n")
